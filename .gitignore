@@ -1,0 +1,16 @@
+env_bpt_rl/
+.vscode/
+*__pycache__/
+
+reproducibility/results/data/SB3_PPO_Ant/*.csv
+reproducibility/results/data/SB3_PPO_BipedalWalker/*.csv
+reproducibility/results/data/SB3_PPO_HalfCheetah/*.csv
+reproducibility/results/data/SB3_PPO_Hopper/*.csv
+reproducibility/results/data/SB3_PPO_LunarLanderContinuous/*.csv
+reproducibility/results/data/SB3_PPO_Swimmer/*.csv
+reproducibility/results/data/SB3_PPO_Walker2d/*.csv
+
+reproducibility/results/data/SB3_PPO_BipedalWalker/all_data.zip
+reproducibility/results/data/SB3_PPO_Hopper/all_data.zip
+reproducibility/results/data/SB3_PPO_Walker2d/all_data.zip
+reproducibility/results/data/SB3_PPO_HalfCheetah/all_data.zip
