@@ -127,11 +127,11 @@ Los settings que incluimos en esta "libreria":
     <td>
     <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
       Pendulum<br>
-      <img src="others/pendulum.gif" width="150">
+      <img src="others/pendulum.gif" height="80">
     </span>
     <span style="display:inline-block; text-align:center; margin-right:15px;">
       MountainCarContinuous<br>
-      <img src="others/mountain_car_continuous.gif" width="150">
+      <img src="others/mountain_car_continuous.gif" height="80">
     </span>
     </td>
     <td style="font-size: 20px;"> &#10003;</td>
@@ -143,11 +143,11 @@ Los settings que incluimos en esta "libreria":
     <td>
     <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
       LunarLanderContinuous<br>
-      <img src="others/lunar_lander_continuous.gif" width="150">
+      <img src="others/lunar_lander_continuous.gif" height="80">
     </span>
       <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
       BipedalWalker<br>
-      <img src="others/bipedal_walker.gif" width="150">
+      <img src="others/bipedal_walker.gif" height="80">
     </span>
     </td>
     <td style="font-size: 20px;"> &#10003;</td>
@@ -159,25 +159,25 @@ Los settings que incluimos en esta "libreria":
     <td>
     <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
       Swimmer<br>
-      <img src="others/swimmer.gif" width="120">
+      <img src="others/swimmer.gif" height="80">
        </span>
       <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
       </span>
       <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
       Hopper<br>
-      <img src="others/hopper.gif" width="120">
+      <img src="others/hopper.gif" height="80">
       </span>
       <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
       HalfCheetah<br>
-      <img src="others/half_cheetah.gif" width="120">
+      <img src="others/half_cheetah.gif" height="80">
       </span>
       <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
       Ant<br>
-      <img src="others/ant.gif" width="120">
+      <img src="others/ant.gif" height="80">
       </span>
       <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
       Walker2d<br>
-      <img src="others/walker2d.gif" width="120">
+      <img src="others/walker2d.gif" height="80">
       </span>
     </td>
     <td style="font-size: 20px;"> &#10003;</td>
