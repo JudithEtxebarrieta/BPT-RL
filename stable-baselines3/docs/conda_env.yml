@@ -1,0 +1,18 @@
+name: root
+channels:
+  - conda-forge
+dependencies:
+  - pip=26.1.2
+  - python=3.12
+  - pytorch-cpu=2.9.1
+  - pip:
+    - gymnasium>=0.29.1,<2.0
+    - cloudpickle
+    - opencv-python-headless
+    - pandas
+    - numpy>=1.20,<3.0
+    - matplotlib
+    - sphinx>=5,<10
+    - sphinx_rtd_theme>=3.0
+    - sphinx_copybutton
+    - myst-parser>=4,<6
