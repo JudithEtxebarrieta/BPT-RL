@@ -10,7 +10,7 @@ Judith Echevarrieta, Etor Arza, Aritz Pérez, Josu Ceberio
 
 ## Reproducibilidad 
 
-Para esto tengo que crear una carpeta que contenga exclusivamente el material necesario para construir las figuras que hemos mostrado en el paper. Ahora mismo esa carpeta es: `final`
+Para esto tengo que crear una carpeta que contenga exclusivamente el material necesario para construir las figuras que hemos mostrado en el paper. Ahora mismo esa carpeta es: `reproducibility`
 
 
 ### Step 0: dependencias
@@ -100,20 +100,27 @@ analyzer.criterion_diagnosis()
 Que genera la base de datos `library/results/SB3_PPO_Pendulum/seed1/df_process_cost_driven_validation_5_0.2.csv`, a partir de la cual se pueden construir estas figuras: 
 
 
-<table width='80%' align='center'>
+<table width="80%" align="center">
   <tr>
-    <td align='center'><img src="../library/results/SB3_PPO_Pendulum/seed1/diagnostic_cost_driven_validation_5_0.2.png" height="190"></td>
-    <td align='center'><img src="../library/results/SB3_PPO_Pendulum/seed1/learning_curves_cost_driven_validation_5_0.2.png" height="150"></td>
-    <td align='center'><img src="../library/results/SB3_PPO_Pendulum/seed1/regions.png" height="150"></td>
+    <td align="center">
+      <img src="library/results/SB3_PPO_Pendulum/seed1/diagnostic_cost_driven_validation_5_0.2.png" height="150">
+    </td>
+    <td align="center">
+      <img src="library/results/SB3_PPO_Pendulum/seed1/learning_curves_cost_driven_validation_5_0.2.png" height="150">
+    </td>
+    <td align="center">
+      <img src="library/results/SB3_PPO_Pendulum/seed1/regions.png" height="150">
+    </td>
   </tr>
-    <tr>
-    <td align='center'> Diagnostic</a></td>
-    <td align='center'> Learning curves</a></td>
-    <td align='center'>Regions</a></td>
+  <tr>
+    <td align="center">Diagnostic</td>
+    <td align="center">Learning curves</td>
+    <td align="center">Regions</td>
   </tr>
- </table>
+</table>
 
 Los settings que incluimos en esta "libreria":
+
 <table width="80%" align="center">
   <tr>
     <th>Engine</th>
@@ -125,63 +132,82 @@ Los settings que incluimos en esta "libreria":
   <tr>
     <td>Classic Control</td>
     <td>
-    <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
-      Pendulum<br>
-      <img src="others/pendulum.gif" height="80">
-    </span>
-    <span style="display:inline-block; text-align:center; margin-right:15px;">
-      MountainCarContinuous<br>
-      <img src="others/mountain_car_continuous.gif" height="80">
-    </span>
+      <table>
+        <tr>
+          <td align="center">
+            Pendulum<br>
+            <img src="others/pendulum.gif" height="80">
+          </td>
+          <td align="center">
+            MountainCarContinuous<br>
+            <img src="others/mountain_car_continuous.gif" height="80">
+          </td>
+        </tr>
+      </table>
     </td>
-    <td style="font-size: 20px;"> &#10003;</td>
-    <td style="font-size: 20px;"> &#10003;</td>
+    <td align="center" style="font-size: 20px;">&#10003;</td>
+    <td align="center" style="font-size: 20px;">&#10003;</td>
   </tr>
 
   <tr>
     <td>Box2D</td>
     <td>
-    <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
-      LunarLanderContinuous<br>
-      <img src="others/lunar_lander_continuous.gif" height="80">
-    </span>
-      <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
-      BipedalWalker<br>
-      <img src="others/bipedal_walker.gif" height="80">
-    </span>
+      <table>
+        <tr>
+          <td align="center">
+            LunarLanderContinuous<br>
+            <img src="others/lunar_lander_continuous.gif" height="80">
+          </td>
+          <td align="center">
+            BipedalWalker<br>
+            <img src="others/bipedal_walker.gif" height="80">
+          </td>
+        </tr>
+      </table>
     </td>
-    <td style="font-size: 20px;"> &#10003;</td>
-    <td style="font-size: 20px;"> &#10003;</td>
+    <td align="center" style="font-size: 20px;">&#10003;</td>
+    <td align="center" style="font-size: 20px;">&#10003;</td>
   </tr>
 
   <tr>
     <td>MuJoCo</td>
     <td>
-    <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
-      Swimmer<br>
-      <img src="others/swimmer.gif" height="80">
-       </span>
-      <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
-      </span>
-      <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
-      Hopper<br>
-      <img src="others/hopper.gif" height="80">
-      </span>
-      <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
-      HalfCheetah<br>
-      <img src="others/half_cheetah.gif" height="80">
-      </span>
-      <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
-      Ant<br>
-      <img src="others/ant.gif" height="80">
-      </span>
-      <span style="display:inline-block; text-align:center; margin-right:15px;vertical-align:top;">
-      Walker2d<br>
-      <img src="others/walker2d.gif" height="80">
-      </span>
+      <table>
+        <tr>
+          <td align="center">
+            Swimmer<br>
+            <img src="others/swimmer.gif" height="80">
+          </td>
+          <td align="center">
+            Hopper<br>
+            <img src="others/hopper.gif" height="80">
+          </td>
+          <td align="center">
+            HalfCheetah<br>
+            <img src="others/half_cheetah.gif" height="80">
+          </td>
+          <td align="center">
+            Ant<br>
+            <img src="others/ant.gif" height="80">
+          </td>
+          <td align="center">
+            Walker2d<br>
+            <img src="others/walker2d.gif" height="80">
+          </td>
+        </tr>
+      </table>
     </td>
-    <td style="font-size: 20px;"> &#10003;</td>
-    <td style="font-size: 20px;"> &#10007;</td>
+    <td align="center" style="font-size: 20px;">&#10003;</td>
+    <td align="center" style="font-size: 20px;">&#10007;</td>
   </tr>
 
 </table>
+
+# Pendientes
+
+- [ ] Traducir a ingles los comentarios de ciertos scripts
+- [ ] Corregir en la definicion de `accuracy` del script `bpt-rl.py`, considerando el tiempo extra del criterios de validacion
+- [ ] Añadir en el script pertinente de la carpeta `reproducibility` la generacion de la tabla añadida en el apendice B.1 tras la revision
+- [ ] En `bpt-rl.py` quedan algunas funciones con TODOs por si en un futuro decido incorporar criterios de seleccion mejorados a esta "libreria", e.g., una criterio de validacion mejorado con el checkpointing TD7 o un criterio train mejorado con estimaciones OPE (quiza esto lo necesite para esta revision en TMLR, porque todavia no hemos terminado)
+- [ ] Escribir bien el README
+- [ ] Hacer publico el repositorio en GitHub (ahora esta privado), y privatizar el que esta publico ahora porque ya ha quedado obsoleto (contiene todo lo hecho en los dos años anteriores hasta llegar al articulo final)
