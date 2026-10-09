@@ -4,7 +4,7 @@ Judith Echevarrieta, Etor Arza, Aritz Pérez, Josu Ceberio
 
 ## Repository overview
 
-This repository accompanies the paper *Best Policy Tracking in Reinforcement Learning* and includes its supplementary material. The paper examines policy selection in single-task policy-based Reinforcement Learning (RL). Although learning in this setting produces sequences of policies with non-monotonic and generally unknown performance, comparatively little attention is paid to how the policy ultimately reported as learned is selected. This raises the question of how reliable common policy-selection practices are under these conditions.
+This repository accompanies the paper *Best Policy Tracking in Reinforcement Learning* and includes its supplementary material. The work focuses on policy selection in single-task policy-based Reinforcement Learning (RL). Although it is well-known that learning in this setting produces sequences of policies with non-monotonic and generally unknown performance, comparatively little attention is paid to how the policy ultimately reported as learned is selected. This raises the open question of how reliable common policy-selection practices are under these conditions.
 
 <img src="others/diagram_summary_text.png">
 
