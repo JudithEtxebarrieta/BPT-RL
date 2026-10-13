@@ -12,8 +12,8 @@ plt.rcParams['text.latex.preamble'] = r'''
 \boldmath
 '''
 
-data_path='final/results/data'
-figures_path='final/results/figures'
+data_path='reproducibility/results/data'
+figures_path='reproducibility/results/figures'
 
 os.makedirs(figures_path+'/paper/', exist_ok=True)
 

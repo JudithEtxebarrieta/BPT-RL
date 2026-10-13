@@ -1,4 +1,12 @@
-from final.src.analysis_data import *
+import argparse
+import re
+
+from reproducibility.src.analysis_data import (
+    DataConverter,
+    DataGenerator,
+    PackProcessDataGenerator,
+)
+from tqdm import tqdm
 
 def df_analysis_per_env(seeds,env,path):
 
@@ -41,5 +49,53 @@ def df_analysis_per_env(seeds,env,path):
 
     
 
-# Example 
-df_analysis_per_env([1,2,3,4],'Pendulum','final/results/data')
+# Previous example retained for reference:
+# df_analysis_per_env([1,2,3,4],'Pendulum','final/results/data')
+
+
+def parse_seeds(values):
+    """Parse either a list of integer seeds or a list(range(start, stop)) expression."""
+    if len(values) == 1:
+        match = re.fullmatch(
+            r"list\(range\(\s*(-?\d+)\s*,\s*(-?\d+)(?:\s*,\s*(-?\d+))?\s*\)\)",
+            values[0],
+        )
+        if match:
+            start, stop, step = match.groups()
+            return list(range(int(start), int(stop), int(step) if step else 1))
+    try:
+        return [int(value) for value in values]
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "Provide integer seeds (for example: --seeds 1 2 3) or a quoted "
+            "list(range(start, stop)) expression."
+        ) from exc
+
+
+# NEW: command-line entry point for generating analysis data for one environment.
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Generate and combine analysis data for one PPO environment."
+    )
+    parser.add_argument(
+        "--seeds",
+        required=True,
+        nargs="+",
+        help="Seeds to process, or a quoted expression such as 'list(range(1, 31))'.",
+    )
+    parser.add_argument(
+        "--env",
+        required=True,
+        choices=[
+            "LunarLanderContinuous", "BipedalWalker", "Walker2d", "Ant",
+            "HalfCheetah", "Hopper", "Swimmer", "Pendulum",
+        ],
+        help="Environment name; Pendulum is an additional example outside the paper analysis.",
+    )
+    parser.add_argument(
+        "--path",
+        required=True,
+        help="Root directory containing the process data, e.g. reproducibility/results/data.",
+    )
+    args = parser.parse_args()
+    df_analysis_per_env(parse_seeds(args.seeds), args.env, args.path)

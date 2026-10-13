@@ -20,7 +20,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 import numpy as np
-from final.src.process_data import *
+from reproducibility.src.process_data import *
 
 #==================================================================================================
 # Auxiliary class

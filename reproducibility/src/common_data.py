@@ -2,8 +2,9 @@
 #==================================================================================================
 # Dependencies
 #==================================================================================================
-from final.src.analysis_data import *
-from final.src.grapher import *
+from reproducibility.src.analysis_data import *
+from reproducibility.src.grapher import *
+import os
 import zipfile
 
 #==================================================================================================
@@ -133,7 +134,7 @@ def from_p25prec_to_pack_optimal_conf(env,default_test_freq):
         df = train_p25[train_p25['pack_conf'].str.endswith('_'+conf, na=False)]
         list_sum_p25.append(df.iloc[:, -3:].sum().sum())
         
-    idx_max = list_sum_p5.index(max(list_sum_p5))
+    idx_max = list_sum_p25.index(max(list_sum_p25))
     all_row[1]=list_conf[idx_max]
 
     # Default configuration of train.
@@ -182,9 +183,18 @@ class UnzipAnalysisData():
                                 ]):
 
         for pack in all_packs:
+            pack_path = data_common_path + '/' + pack
+            archive_path = pack_path + '/all_data.zip'
+            analysis_path = pack_path + '/analysis_data'
 
-            with zipfile.ZipFile(data_common_path+'/'+pack+'/all_data.zip', "r") as zip_ref:
-                zip_ref.extractall(data_common_path+'/'+pack+'/')
+            if os.path.isfile(archive_path):
+                with zipfile.ZipFile(archive_path, "r") as zip_ref:
+                    zip_ref.extractall(pack_path + '/')
+            elif not os.path.isdir(analysis_path):
+                raise FileNotFoundError(
+                    f"Neither {archive_path} nor {analysis_path} is available. "
+                    "Generate the analysis data for all seven paper environments first."
+                )
     
 class ComputeCommonData():
     '''Save the best configuration of the criteria, taking all setups into account.'''
@@ -215,6 +225,7 @@ class ComputeCommonData():
 
 
 # Main programme.
-data_common_path='final/results/data'
+# NEW: run from the repository root with the activated project environment.
+data_common_path='reproducibility/results/data'
 UnzipAnalysisData()
 ComputeCommonData()

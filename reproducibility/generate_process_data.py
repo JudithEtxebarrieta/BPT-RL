@@ -1,4 +1,6 @@
-from final.src.process_data import *
+import argparse
+
+from reproducibility.src.process_data import *
 
 class DataGenerator():
 
@@ -80,9 +82,42 @@ class DataGenerator():
                 PackOptions.PPO_Pendulum(seed,'pack_PPO_Pendulum_seed'+str(seed)+'_',self.data_path,truth_n_workers)
 
 
-# Example
-datagenerator=DataGenerator('Pendulum','final/results/data/SB3_PPO_Pendulum')
-datagenerator.check_resource_availability(available_CPUs=8)
+# Previous example retained for reference:
+# datagenerator=DataGenerator('Pendulum','final/results/data/SB3_PPO_Pendulum')
+# datagenerator.check_resource_availability(available_CPUs=8)
+#
+# for seed in [1,2,3,4]:
+#     datagenerator.default_process_data(seed,truth_n_workers=6)
 
-for seed in [1,2,3,4]:
-    datagenerator.default_process_data(seed,truth_n_workers=6)
+
+# NEW: command-line entry point for generating one environment-seed process.
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Generate and store one PPO environment-seed learning process."
+    )
+    parser.add_argument(
+        "--env",
+        required=True,
+        choices=[
+            "LunarLanderContinuous", "BipedalWalker", "Walker2d", "Ant",
+            "HalfCheetah", "Hopper", "Swimmer", "Pendulum",
+        ],
+        help="Environment name; Pendulum is an additional example outside the paper analysis.",
+    )
+    parser.add_argument("--seed", required=True, type=int, help="Random seed.")
+    parser.add_argument(
+        "--path",
+        required=True,
+        help="Root directory for the generated data, e.g. reproducibility/results/data.",
+    )
+    parser.add_argument(
+        "--available_CPUs",
+        required=True,
+        type=int,
+        help="Available CPUs; used for the ground-truth interaction and resource reporting.",
+    )
+    args = parser.parse_args()
+
+    generator = DataGenerator(args.env, args.path)
+    generator.check_resource_availability(args.available_CPUs)
+    generator.default_process_data(args.seed, truth_n_workers=args.available_CPUs)
