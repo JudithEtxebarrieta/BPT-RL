@@ -22,6 +22,8 @@ from tqdm import tqdm
 import numpy as np
 from reproducibility.src.process_data import *
 
+np.seterr(divide='ignore')
+
 #==================================================================================================
 # Auxiliary class
 #==================================================================================================
@@ -229,7 +231,7 @@ class ProcessEstimator:
         '''
         
         # Read the databases associated with the process of interest.
-        current_path=data_common_path+'/'+algo+'_'+env+'/'+algo+'_'+env+'_seed'+str(seed)+'_/process_info'
+        current_path=data_common_path+'/'+algo+'_'+env+'/'+algo.replace('SB3','pack')+'_'+env+'_seed'+str(seed)+'_/process_info'
         df_train=pd.read_csv(current_path+'/df_traj.csv')
         df_test=pd.read_csv(current_path+'/df_val.csv')
         
@@ -292,7 +294,7 @@ class Selector:
         global global_data_common_path
           
         # Read the databases for the process of interest.
-        current_path=global_data_common_path+'/'+pack+'/'+pack+'_seed'+str(seed)+'_/process_info'
+        current_path=global_data_common_path+'/'+pack+'/'+pack.replace('SB3','pack')+'_seed'+str(seed)+'_/process_info'
         df_train=pd.read_csv(current_path+'/df_traj.csv')
         df_train_estimates=pd.read_csv(current_path+'/df_traj_estimates.csv')
         df_test=pd.read_csv(current_path+'/df_val.csv')
@@ -555,9 +557,10 @@ class PointEstimator:
     def best_estimation_validation_with_cost(self,elapsed_time,cost_perc,n_ep_or_freq,):
 
         # Extract the required columns from df_test.
-        df_test_ep_rewards=[DataConverter.compress_decompress_list(i,compress=False) for i in self.df_test['ep_rewards']]
-        df_test_elapsed_val_times=[DataConverter.compress_decompress_list(i,compress=False) for i in self.df_test['elapsed_val_time']]
-        df_test_n_val_ep=[DataConverter.compress_decompress_list(i,compress=False) for i in self.df_test['n_val_ep']]
+        df_test_ep_rewards=self.df_test['ep_rewards']
+        df_test_elapsed_val_times=self.df_test['elapsed_val_time']
+        df_test_n_val_ep=self.df_test['n_val_ep']
+
 
         # Select only the data associated with the episodes reserved for test.
         df_test_ep_rewards=[ep_rewards[500:] for ep_rewards in df_test_ep_rewards]
@@ -629,18 +632,18 @@ class EvolutionGenerator:
         val_time=0
         for time in x_times:
             if criteria=='truth_best':
-                policy_id=self.selector.truth_best_policy(time)
+                policy_id=self.estimator.selector.truth_best_policy(time)
             if criteria=='worst':
-                policy_id=self.selector.worst_policy(time)
+                policy_id=self.estimator.selector.worst_policy(time)
             if criteria=='last':
-                policy_id=self.selector.last_policy(time)
+                policy_id=self.estimator.selector.last_policy(time)
             if criteria=='best_train':
-                policy_id=self.selector.best_policy_training(time,n_ep)
+                policy_id=self.estimator.selector.best_policy_training(time,n_ep)
             if criteria=='best_val':
-                policy_id,val_time=self.selector.best_policy_validation(time,n_ep,freq)
+                policy_id,val_time=self.estimator.selector.best_policy_validation(time,n_ep,freq)
                 x_extras.append(val_time)
             if criteria =='best_val_with_cost_freq':
-                policy_id,val_time,val_n_ep=self.selector.best_policy_validation_with_cost(time,cost_perc,n_ep)
+                policy_id,val_time,val_n_ep=self.estimator.selector.best_policy_validation_with_cost(time,cost_perc,n_ep)
                 x_extras.append(val_time)
 
             if for_analyzer:
@@ -662,17 +665,17 @@ class EvolutionGenerator:
         y_eff=[]
         for time in x_times:
             if criteria=='truth_best':
-                policy_id=self.selector.truth_best_policy(time)
+                policy_id=self.estimator.selector.truth_best_policy(time)
             if criteria=='worst':
-                policy_id=self.selector.worst_policy(time)
+                policy_id=self.estimator.selector.worst_policy(time)
             if criteria=='last':
-                policy_id=self.selector.last_policy(time)
+                policy_id=self.estimator.selector.last_policy(time)
             if criteria=='best_train':
-                policy_id=self.selector.best_policy_training(time,n_ep)
+                policy_id=self.estimator.selector.best_policy_training(time,n_ep)
             if criteria=='best_val':
-                policy_id,_=self.selector.best_policy_validation(time,n_ep,freq)
+                policy_id,_=self.estimator.selector.best_policy_validation(time,n_ep,freq)
             if criteria =='best_val_with_cost_freq':
-                policy_id,_,_=self.selector.best_policy_validation_with_cost(time,cost_perc,n_ep)
+                policy_id,_,_=self.estimator.selector.best_policy_validation_with_cost(time,cost_perc,n_ep)
 
             eff=self.estimator.efficiency(time,policy_id,normalized=normalized,metric=metric)
             y_eff.append(eff)
@@ -692,19 +695,19 @@ class EvolutionGenerator:
 
         for time in x_times:
             if criteria=='truth_best':
-                policy_id=self.selector.truth_best_policy(time)
+                policy_id=self.estimator.selector.truth_best_policy(time)
             if criteria=='worst':
-                policy_id=self.selector.worst_policy(time)
+                policy_id=self.estimator.selector.worst_policy(time)
             if criteria=='last':
-                policy_id=self.selector.last_policy(time)
+                policy_id=self.estimator.selector.last_policy(time)
             if criteria=='best_train':
-                policy_id=self.selector.best_policy_training(time,n_ep)
+                policy_id=self.estimator.selector.best_policy_training(time,n_ep)
             if criteria=='best_val':
-                policy_id,_=self.selector.best_policy_validation(time,n_ep,freq)
+                policy_id,_=self.estimator.selector.best_policy_validation(time,n_ep,freq)
             if criteria =='best_val_with_cost_freq':
-                policy_id,_,_=self.selector.best_policy_validation_with_cost(time,cost_perc,n_ep)
+                policy_id,_,_=self.estimator.selector.best_policy_validation_with_cost(time,cost_perc,n_ep)
             
-            y_truth.append(self.selector.df_test_estimates[self.selector.df_test_estimates['n_policy']==policy_id]['truth'].values[0])
+            y_truth.append(self.estimator.selector.df_test_estimates[self.estimator.selector.df_test_estimates['n_policy']==policy_id]['truth'].values[0])
         
         return y_truth
 
@@ -916,7 +919,7 @@ class DataGenerator:
             df_prec=ProcessEstimator.read_create_estimates_csv(path_prec,generator.estimator.df_train.shape[0])
             df_cost=ProcessEstimator.read_create_estimates_csv(path_cost,generator.estimator.df_train.shape[0])
             if pack+str(seed)+str(conf)+'_'+metric not in df_prec.columns:
-                eff_evol,cost_evol=generator.precision_evolution(x_times,n_ep=n_ep,freq=x_times[::freq],criteria=criteria,metric=metric,for_analyzer=True,cost_perc=cost_perc)
+                eff_evol,cost_evol=generator.precision_evolution(x_times,n_ep=n_ep,freq=x_times[::freq],criteria=criteria,for_analyzer=True,cost_perc=cost_perc)
                 df_prec[pack+str(seed)+str(conf)+'_'+metric]=eff_evol
                 df_cost[pack+str(seed)+str(conf)+'_'+metric]=np.array(cost_evol) / np.array(x_times)
                 df_prec.to_csv(path_prec,index=False)
@@ -928,7 +931,7 @@ class DataGenerator:
             df_cost=ProcessEstimator.read_create_estimates_csv(path_cost,generator.estimator.df_train.shape[0])
             df_n_ep=ProcessEstimator.read_create_estimates_csv(path_n_ep,generator.estimator.df_train.shape[0])
             if pack+str(seed)+str(conf)+'_'+metric not in df_prec.columns:
-                eff_evol,cost_evol,val_n_ep=generator.precision_evolution(x_times,n_ep=n_ep,freq=x_times[::freq],criteria=criteria,metric=metric,for_analyzer=True,cost_perc=cost_perc)
+                eff_evol,cost_evol,val_n_ep=generator.precision_evolution(x_times,n_ep=n_ep,freq=x_times[::freq],criteria=criteria,for_analyzer=True,cost_perc=cost_perc)
                 df_prec[pack+str(seed)+str(conf)+'_'+metric]=eff_evol
                 df_cost[pack+str(seed)+str(conf)+'_'+metric]=np.array(cost_evol) / np.array(x_times)
                 df_n_ep[pack+str(seed)+str(conf)+'_'+metric]=val_n_ep
@@ -939,7 +942,7 @@ class DataGenerator:
         if criteria in ['last','best_train']: 
             df=ProcessEstimator.read_create_estimates_csv(path,generator.estimator.df_train.shape[0])
             if pack+str(seed)+str(conf)+'_'+metric not in df.columns:
-                eff_evol=generator.precision_evolution(x_times,n_ep=n_ep,freq=None,criteria=criteria,metric=metric,for_analyzer=True,cost_perc=cost_perc)
+                eff_evol=generator.precision_evolution(x_times,n_ep=n_ep,freq=None,criteria=criteria,for_analyzer=True,cost_perc=cost_perc)
                 df[pack+str(seed)+str(conf)+'_'+metric]=eff_evol
                 df.to_csv(path,index=False)
 

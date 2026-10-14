@@ -184,17 +184,39 @@ class UnzipAnalysisData():
 
         for pack in all_packs:
             pack_path = data_common_path + '/' + pack
-            archive_path = pack_path + '/all_data.zip'
             analysis_path = pack_path + '/analysis_data'
 
-            if os.path.isfile(archive_path):
-                with zipfile.ZipFile(archive_path, "r") as zip_ref:
-                    zip_ref.extractall(pack_path + '/')
-            elif not os.path.isdir(analysis_path):
-                raise FileNotFoundError(
-                    f"Neither {archive_path} nor {analysis_path} is available. "
-                    "Generate the analysis data for all seven paper environments first."
-                )
+            for name_zip in [
+                'all_last_data.zip',
+                'all_train_data.zip',
+                'all_test_data.zip',
+                'all_test_cost_data.zip',
+                'global_data.zip'
+            ]:
+                archive_path = os.path.join(pack_path, name_zip)
+
+                if os.path.isfile(archive_path):
+                    with zipfile.ZipFile(archive_path, "r") as zip_ref:
+                        for member in zip_ref.namelist():
+                            # Eliminar la carpeta raíz del ZIP
+                            parts = member.split('/', 1)
+
+                            if len(parts) == 2 and parts[1]:
+                                # Extraer directamente el contenido en pack_path
+                                target_path = os.path.join(pack_path, parts[1])
+
+                                if member.endswith('/'):
+                                    os.makedirs(target_path, exist_ok=True)
+                                else:
+                                    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                                    with zip_ref.open(member) as src, open(target_path, 'wb') as dst:
+                                        dst.write(src.read())
+
+                elif not os.path.isdir(analysis_path):
+                    raise FileNotFoundError(
+                        f"Neither {archive_path} nor {analysis_path} is available. "
+                        "Generate the analysis data for all seven paper environments first."
+                    )
     
 class ComputeCommonData():
     '''Save the best configuration of the criteria, taking all setups into account.'''
@@ -224,8 +246,7 @@ class ComputeCommonData():
             from_p25prec_to_pack_optimal_conf(pack.split('_')[2],default_test_freq[i])
 
 
-# Main programme.
-# NEW: run from the repository root with the activated project environment.
+# Main programme: run from the repository root with the activated project environment.
 data_common_path='reproducibility/results/data'
 UnzipAnalysisData()
 ComputeCommonData()

@@ -1011,6 +1011,27 @@ class ModifiedFunctions_OffPolicy:
                 gradient_steps = self.gradient_steps if self.gradient_steps >= 0 else rollout.episode_timesteps
                 # Special case when the user passes `gradient_steps=0`
                 if gradient_steps > 0:
+
+                    # MODIFICATION ########################################################################
+                    if criterion=='train':
+
+                        # Comprobar si la mejor politica segun la estimacion del criterio a cambiado
+                        if safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer])>select_est_reward:
+                            select_policy=n_policy
+                            select_reward=last_truth_reward
+                            select_est_reward=safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer])
+
+                        # Completar las dos columnas de la ultima iteracion que faltaban por completar en el df
+                        with open(join(process_dir, "df_process_"+criterion+'_'+criterion_conf+".csv"), "r", newline="") as df_process:
+                            rows = list(csv.reader(df_process))
+                            rows[-1][4] = select_policy
+                            rows[-1][5] = select_reward 
+                
+                        with open(join(process_dir, "df_process_"+criterion+'_'+criterion_conf+".csv"), "w", newline="") as df_process:
+                            writer = csv.writer(df_process)
+                            writer.writerows(rows)
+                    #######################################################################################
+
                     self.train(batch_size=self.batch_size, gradient_steps=gradient_steps)
 
             # MODIFICATION ########################################################################
@@ -1027,52 +1048,6 @@ class ModifiedFunctions_OffPolicy:
 
         return self
 
-    def dump_logs(self) -> None:
-        """
-        Write log data.
-        """
-        assert self.ep_info_buffer is not None
-        assert self.ep_success_buffer is not None
-
-        time_elapsed = max((time.time_ns() - self.start_time) / 1e9, sys.float_info.epsilon)
-        fps = int((self.num_timesteps - self._num_timesteps_at_start) / time_elapsed)
-        self.logger.record("time/episodes", self._episode_num, exclude="tensorboard")
-        if len(self.ep_info_buffer) > 0 and len(self.ep_info_buffer[0]) > 0:
-            self.logger.record("rollout/ep_rew_mean", safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer]))
-            self.logger.record("rollout/ep_len_mean", safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer]))
-        self.logger.record("time/fps", fps)
-        self.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
-        self.logger.record("time/total_timesteps", self.num_timesteps, exclude="tensorboard")
-        if self.use_sde:
-            self.logger.record("train/std", (self.actor.get_std()).mean().item())  # type: ignore[operator]
-
-        if len(self.ep_success_buffer) > 0:
-            self.logger.record("rollout/success_rate", safe_mean(self.ep_success_buffer))
-        # Pass the number of timesteps for tensorboard
-        self.logger.dump(step=self.num_timesteps)
-
-        # MODIFICATION ##############################################
-        global select_policy,select_reward,select_est_reward, criterion, criterion_conf, last_truth_reward, n_policy
-
-        if criterion=='train':
-
-            # Comprobar si la mejor politica segun la estimacion del criterio a cambiado
-            if safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer])>select_est_reward:
-                select_policy=n_policy
-                select_reward=last_truth_reward
-                select_est_reward=safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer])
-
-            # Completar las dos columnas de la ultima iteracion que faltaban por completar en el df
-            with open(join(process_dir, "df_process_"+criterion+'_'+criterion_conf+".csv"), "r", newline="") as df_process:
-                rows = list(csv.reader(df_process))
-                rows[-1][4] = select_policy
-                rows[-1][5] = select_reward 
-    
-            with open(join(process_dir, "df_process_"+criterion+'_'+criterion_conf+".csv"), "w", newline="") as df_process:
-                writer = csv.writer(df_process)
-                writer.writerows(rows)
-
-        #############################################################
 
 #==================================================================================================
 #  New functions for generating learning processes
@@ -1305,7 +1280,6 @@ class Options:
         # Modificar funciones de librerias existentes 
         from stable_baselines3.sac import MlpPolicy, SAC
         OffPolicyAlgorithm.learn=ModifiedFunctions_OffPolicy.learn
-        OffPolicyAlgorithm.dump_logs=ModifiedFunctions_OffPolicy.dump_logs
 
         # OffPolicyAlgorithm.collect_rollouts=ModifiedFunctions_OffPolicy.collect_rollouts
         # SAC.train=ModifiedFunctions_OffPolicy.SAC_train
@@ -1362,11 +1336,11 @@ class PackOptions:
     and specific configurations determined by the method-environment pack in the RL Baselines3 Zoo.
 
     TODO: aqui creo que debo añadir como parametro modificable manualemente en cada una de las funciones
-    el valor de 
+    el valor de n_eval_ep
     '''
     # On-policy packs (with PPO)
     #------------------------  Classic Control
-    def PPO_Pendulum(seed,library_dir,criterion,available_resources=None):
+    def PPO_Pendulum(seed,library_dir,criterion,available_resources=None,n_eval_ep=500):
 
         ''' Pendulum-v1:
                 n_envs: 4
@@ -1400,11 +1374,11 @@ class PackOptions:
                 policy='MlpPolicy',gae_lambda=0.95,gamma=0.9,ent_coef=0.0, learning_rate=1e-3,clip_range=0.2,
                 use_sde=True,sde_sample_freq=4, # learning process parameters
 
-                callback=True, n_eval_ep=500, eval_freq=1024, n_eval_envs=4, deterministic_eval=True, # selection criteria
+                callback=True, n_eval_ep=n_eval_ep, eval_freq=1024, n_eval_envs=4, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
 
-    def PPO_MountailCarContinuous(seed,library_dir,criterion,available_resources=None):
+    def PPO_MountailCarContinuous(seed,library_dir,criterion,available_resources=None,n_eval_ep=500):
 
         ''' MountainCarContinuous-v0:
                 normalize: true
@@ -1441,12 +1415,12 @@ class PackOptions:
                 device='auto', vec_env_type='sequential', normalize=True, # execution type
                 policy='MlpPolicy',gae_lambda=0.9,gamma=0.9999,ent_coef=0.00429, learning_rate=7.77e-05,clip_range=0.1,
                 max_grad_norm=5,use_sde=True,vf_coef=0.19, policy_kwargs=dict(log_std_init=-3.29, ortho_init=False), # learning process parameters
-                callback=True, n_eval_ep=500, eval_freq=8, n_eval_envs=1, deterministic_eval=True, # selection criteria
+                callback=True, n_eval_ep=n_eval_ep, eval_freq=8, n_eval_envs=1, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
 
     #------------------------  Box2D
-    def PPO_LunarLanderContinuous(seed,library_dir,criterion,available_resources=None):
+    def PPO_LunarLanderContinuous(seed,library_dir,criterion,available_resources=None,n_eval_ep=500):
 
         ''' Configuracion tomada de: https://github.com/DLR-RM/rl-baselines3-zoo/tree/master/hyperparams
             LunarLanderContinuous-v3:
@@ -1476,11 +1450,11 @@ class PackOptions:
                 n_epoch=4,batch_size=64, # policy update
                 device='auto', vec_env_type='sequential', # execution type
                 policy='MlpPolicy',gae_lambda=0.98,gamma=0.999,ent_coef=0.01, # learning process parameters
-                callback=True, n_eval_ep=500, eval_freq=1024, n_eval_envs=16, deterministic_eval=True, # selection criteria
+                callback=True, n_eval_ep=n_eval_ep, eval_freq=1024, n_eval_envs=16, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
 
-    def PPO_BipedalWalker(seed,library_dir,criterion,available_resources=None):
+    def PPO_BipedalWalker(seed,library_dir,criterion,available_resources=None,n_eval_ep=500):
 
         ''' Configuracion tomada de: https://github.com/DLR-RM/rl-baselines3-zoo/tree/master/hyperparams
         BipedalWalker-v3:
@@ -1512,12 +1486,12 @@ class PackOptions:
                 n_epoch=10,batch_size=64, # policy update
                 device='auto', vec_env_type='sequential', # execution type
                 policy='MlpPolicy',gae_lambda=0.95,gamma=0.999,ent_coef=0.0, learning_rate=3e-4, clip_range=0.18, # learning process parameters
-                callback=True, n_eval_ep=500, eval_freq=2048, n_eval_envs=32, deterministic_eval=True, # selection criteria
+                callback=True, n_eval_ep=n_eval_ep, eval_freq=2048, n_eval_envs=32, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
 
     #------------------------  MuJoCo
-    def PPO_Walker2d(seed,library_dir,criterion,available_resources=None):
+    def PPO_Walker2d(seed,library_dir,criterion,available_resources=None,n_eval_ep=500):
 
         ''' Configuracion tomada de: https://github.com/DLR-RM/rl-baselines3-zoo/tree/master/hyperparams
             Walker2d-v4:
@@ -1548,11 +1522,11 @@ class PackOptions:
             n_epoch=20,batch_size=32, # policy update
             device='auto', vec_env_type='sequential', # execution type
             policy='MlpPolicy',gae_lambda=0.95,gamma=0.99,ent_coef=0.000585045, learning_rate=5.05041e-05, clip_range=0.1,max_grad_norm=1, vf_coef= 0.871923,# learning process parameters
-            callback=True, n_eval_ep=500, eval_freq=512, n_eval_envs=1, deterministic_eval=True, # selection criteria
+            callback=True, n_eval_ep=n_eval_ep, eval_freq=512, n_eval_envs=1, deterministic_eval=True, # selection criteria
             selec_criterion=criterion
             )
         
-    def PPO_Ant(seed,library_dir,criterion,available_resources=None):
+    def PPO_Ant(seed,library_dir,criterion,available_resources=None,n_eval_ep=500):
         '''
         Ant-v4: 
             normalize: true
@@ -1570,11 +1544,11 @@ class PackOptions:
             truth_n_workers=available_resources,normalize=True, # learning interaction
             device='auto', vec_env_type='sequential', # execution type
             policy='MlpPolicy', # learning process parameters
-            callback=True, n_eval_ep=500, eval_freq=2048, deterministic_eval=True, # selection criteria
+            callback=True, n_eval_ep=n_eval_ep, eval_freq=2048, deterministic_eval=True, # selection criteria
             selec_criterion=criterion
             )
 
-    def PPO_HalfCheetah(seed,library_dir,criterion,available_resources=None):
+    def PPO_HalfCheetah(seed,library_dir,criterion,available_resources=None,n_eval_ep=500):
         '''
         HalfCheetah-v4:
             normalize: true
@@ -1616,11 +1590,11 @@ class PackOptions:
                                 activation_fn=nn.ReLU,
                                 net_arch=dict(pi=[256, 256], vf=[256, 256])
                             ), # learning process parameters
-            callback=True, n_eval_ep=500, eval_freq=512, deterministic_eval=True, # selection criteria
+            callback=True, n_eval_ep=n_eval_ep, eval_freq=512, deterministic_eval=True, # selection criteria
             selec_criterion=criterion
             )
 
-    def PPO_Hopper(seed,library_dir,criterion,available_resources=None):
+    def PPO_Hopper(seed,library_dir,criterion,available_resources=None,n_eval_ep=500):
         '''
         Hopper-v4:
             normalize: true
@@ -1664,11 +1638,11 @@ class PackOptions:
                                 net_arch=dict(pi=[256, 256], vf=[256, 256])
                             ), # learning process parameters
 
-            callback=True, n_eval_ep=500, eval_freq=512, deterministic_eval=True, # selection criteria
+            callback=True, n_eval_ep=n_eval_ep, eval_freq=512, deterministic_eval=True, # selection criteria
             selec_criterion=criterion
             )
 
-    def PPO_Swimmer(seed,library_dir,criterion,available_resources=None):
+    def PPO_Swimmer(seed,library_dir,criterion,available_resources=None,n_eval_ep=500):
         '''
         Swimmer-v4:
             n_timesteps: !!float 1e6
@@ -1695,14 +1669,14 @@ class PackOptions:
                 device='auto', vec_env_type='sequential', # execution type
                 policy='MlpPolicy',gamma=0.9999,learning_rate=6e-4,gae_lambda=0.98,
 
-                callback=True, n_eval_ep=500, eval_freq=1024, n_eval_envs=1,deterministic_eval=True, # selection criteria
+                callback=True, n_eval_ep=n_eval_ep, eval_freq=1024, n_eval_envs=1,deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
 
 
     # Off-policy packs (with SAC)
     #------------------------  Classic Control
-    def SAC_Pendulum(seed,library_dir,criterion,available_resources=None):
+    def SAC_Pendulum(seed,library_dir,criterion,available_resources=None,n_eval_ep=5):
 
         ''' Pendulum-v1:
             n_timesteps: 20000
@@ -1724,13 +1698,13 @@ class PackOptions:
                 truth_n_workers=available_resources, # learning interaction
                 device='auto', vec_env_type='sequential', # execution type
                 policy='MlpPolicy', learning_rate=1e-3,# learning process parameters
-                # TODO: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
+                # NOTE: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
                 # porque sino la ejecucion de prueba va a tardar muchisimo para evaluar todas las politicas de la secuencia
-                callback=True, n_eval_ep=5, eval_freq=1, deterministic_eval=True, # selection criteria
+                callback=True, n_eval_ep=n_eval_ep, eval_freq=1, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
 
-    def SAC_MountainCarContinuous(seed,library_dir,criterion,available_resources=None):
+    def SAC_MountainCarContinuous(seed,library_dir,criterion,available_resources=None,n_eval_ep=5):
 
         ''' MountainCarContinuous-v0:
             n_timesteps: !!float 50000
@@ -1763,14 +1737,14 @@ class PackOptions:
                 device='auto', vec_env_type='sequential', # execution type
                 policy='MlpPolicy', learning_rate=3e-4,buffer_size=50000,ent_coef=0.1,gamma=0.9999,tau=0.01,
                 learning_starts=0, use_sde=True, policy_kwargs=dict(log_std_init=-3.67, net_arch=[64, 64]),   # learning process parameters
-                # TODO: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
+                # NOTE: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
                 # porque sino la ejecucion de prueba va a tardar muchisimo para evaluar todas las politicas de la secuencia
-                callback=True, n_eval_ep=5, eval_freq=32, deterministic_eval=True, # selection criteria
+                callback=True, n_eval_ep=n_eval_ep, eval_freq=32, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
 
     #------------------------  Box2D
-    def SAC_LunarLanderContinuous(seed,library_dir,criterion,available_resources=None):
+    def SAC_LunarLanderContinuous(seed,library_dir,criterion,available_resources=None,n_eval_ep=5):
 
         ''' LunarLanderContinuous-v3:
                 n_timesteps: !!float 5e5
@@ -1804,13 +1778,13 @@ class PackOptions:
                 policy='MlpPolicy',gamma=0.99,ent_coef='auto', learning_rate= lambda progress_remaining: 7.3e-4 * progress_remaining,
                 buffer_size=1000000,tau=0.01,learning_starts=10000, 
                 policy_kwargs=dict(net_arch=[400, 300]),# learning process parameters
-                # TODO: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
+                # NOTE: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
                 # porque sino la ejecucion de prueba va a tardar muchisimo para evaluar todas las politicas de la secuencia
-                callback=True, n_eval_ep=1, eval_freq=1, deterministic_eval=True, # selection criteria
+                callback=True, n_eval_ep=n_eval_ep, eval_freq=1, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
 
-    def SAC_BipedalWalker(seed,library_dir,criterion,available_resources=None):
+    def SAC_BipedalWalker(seed,library_dir,criterion,available_resources=None,n_eval_ep=5):
 
         ''' BipedalWalker-v3:
                 n_timesteps: !!float 5e5
@@ -1845,9 +1819,9 @@ class PackOptions:
                 policy='MlpPolicy',gamma=0.98,ent_coef='auto', learning_rate= 7.3e-4,
                 buffer_size=300000,tau=0.02,learning_starts=10000, use_sde=True, 
                 policy_kwargs=dict(log_std_init=-3, net_arch=[400, 300]),# learning process parameters
-                # TODO: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
+                # NOTE: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
                 # porque sino la ejecucion de prueba va a tardar muchisimo para evaluar todas las politicas de la secuencia
-                callback=True, n_eval_ep=1, eval_freq=64, deterministic_eval=True, # selection criteria
+                callback=True, n_eval_ep=n_eval_ep, eval_freq=64, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
     
@@ -1866,7 +1840,7 @@ class Metrics:
         self.df_process=pd.read_csv(df_process_path)
         
 
-    def regions(self):
+    def regions(self,w=0.1):
 
         truth_last=self.df_process['reward_last'].tolist()
 
@@ -1874,15 +1848,15 @@ class Metrics:
         for i in range(len(truth_last)):
 
             if truth_last[i]-min(truth_last[:i+1])<=np.std(truth_last[:i+1]) :
-                if a==None or i-a<int(len(truth_last)*0.1): # La condicion tiene que cumplirse con una cierta continuidad (no vale que se vuelva a cumprir mucho despues otra vez)
+                if a==None or i-a<int(len(truth_last)*w): # La condicion tiene que cumplirse con una cierta continuidad (no vale que se vuelva a cumprir mucho despues otra vez)
                     a=i
             if max(truth_last[-i-1:])-truth_last[-1-i]<=np.std(truth_last[-i-1:]) :
-                if b==None or b-len(truth_last)+i<int(len(truth_last)*0.1):
+                if b==None or b-len(truth_last)+i<int(len(truth_last)*w):
                     b=len(truth_last)-i
 
         # Para que siempre haya un minimo de datos en los intervalos [0,a], [a,b] y [b,T]
-        a=min([max([a,int(0.1*len(truth_last))]),int(2*len(truth_last)/3)-int(0.1*len(truth_last))])
-        b=max([min([b,len(truth_last)-int(0.1*len(truth_last))]),a+int(0.1*len(truth_last))])
+        a=min([max([a,int(w*len(truth_last))]),int(2*len(truth_last)/3)-int(w*len(truth_last))])
+        b=max([min([b,len(truth_last)-int(w*len(truth_last))]),a+int(w*len(truth_last))])
 
         return [a,b]
 
@@ -1930,7 +1904,7 @@ class Metrics:
         eff_evol=[]
         for i in range(1,len(truth_last)):
             indice = next(j for j, x in enumerate(truth_last[:i+1]) if x >= truth_selec[i])
-            eff_evol.append((indice+1)/len(truth_last))
+            eff_evol.append((indice+1)/len(truth_last[:i+1]))
 
         return eff_evol
 
@@ -1942,14 +1916,14 @@ class ProcessAnalysis:
     - boxplots of degradation, accuracy and efficiency by region
     '''
 
-    def __init__(self,df_process_path,figure_path):
+    def __init__(self,df_process_path,figure_path,w=0.1):
 
         self.df_process=pd.read_csv(df_process_path)
         self.df_process_path=df_process_path
         self.figure_path=figure_path
 
         metrics=Metrics(self.df_process_path)
-        self.region_limits=metrics.regions()
+        self.region_limits=metrics.regions(w=w)
         self.deg_evol=metrics.degradation()
         self.acc_evol=metrics.accuracy()
         self.eff_evol=metrics.efficiency()
@@ -2072,34 +2046,36 @@ class ProcessAnalysis:
         plt.savefig(self.figure_path + "/diagnostic_" + self.criteria_name + ".pdf")
         plt.savefig(self.figure_path + "/diagnostic_" + self.criteria_name + ".png")
 
-def complete_analysis(df_process_path,figure_path):
-    analyzer=ProcessAnalysis(df_process_path,figure_path)
+def complete_analysis(df_process_path,figure_path,w=0.1):
+
+    analyzer=ProcessAnalysis(df_process_path,figure_path,w)
     analyzer.learning_curve()
     analyzer.process_regions()
     analyzer.criterion_diagnosis()
 
 
 # Prueba con algunos procesos aislados variados
+
 # PackOptions.PPO_Pendulum(1,'library/results',{ "name": 'last',"kappa": None,"phi": None,"phi_c": None },available_resources=6)
 # PackOptions.PPO_Pendulum(1,'library/results',{ "name": 'train',"kappa": 50,"phi": None,"phi_c": None },available_resources=6)
 # PackOptions.PPO_Pendulum(1,'library/results',{ "name": 'validation',"kappa": 5,"phi": 10,"phi_c": None },available_resources=6)
 # PackOptions.PPO_Pendulum(1,'library/results',{ "name": 'cost_driven_validation',"kappa": 5,"phi": None,"phi_c": 0.2 },available_resources=6)
 
-# PackOptions.SAC_Pendulum(1,'library/results',{ "name": 'last',"kappa": None,"phi": None,"phi_c": None },available_resources=6)
-# PackOptions.SAC_Pendulum(1,'library/results',{ "name": 'train',"kappa": 50,"phi": None,"phi_c": None },available_resources=6)
-# PackOptions.SAC_Pendulum(1,'library/results',{ "name": 'validation',"kappa": 5,"phi": 10,"phi_c": None },available_resources=6)
-
-# PackOptions.SAC_MountainCarContinuous(2,'library/results',{ "name": 'last',"kappa": None,"phi": None,"phi_c": None },available_resources=6)
-# PackOptions.SAC_MountainCarContinuous(1,'library/results',{ "name": 'train',"kappa": 50,"phi": None,"phi_c": None },available_resources=6)
-# PackOptions.SAC_MountainCarContinuous(1,'library/results',{ "name": 'validation',"kappa": 5,"phi": 10,"phi_c": None },available_resources=6)
-
+# PackOptions.SAC_MountainCarContinuous(5,'library/results',{ "name": 'last',"kappa": None,"phi": None,"phi_c": None },available_resources=6)
+# PackOptions.SAC_MountainCarContinuous(2,'library/results',{ "name": 'train',"kappa": 50,"phi": None,"phi_c": None },available_resources=6)
+# PackOptions.SAC_MountainCarContinuous(2,'library/results',{ "name": 'validation',"kappa": 5,"phi": 10,"phi_c": None },available_resources=6)
+# PackOptions.SAC_MountainCarContinuous(2,'library/results',{ "name": 'cost_driven_validation',"kappa": 5,"phi": None,"phi_c": 0.2 },available_resources=6)
 
 
 # Obtener graficas de df_process
 
 # complete_analysis('library/results/SB3_PPO_Pendulum/seed1/df_process_last_.csv','library/results/SB3_PPO_Pendulum/seed1')
-# complete_analysis('library/results/SB3_SAC_MountainCarContinuous/seed1/df_process_last_.csv','library/results/SB3_SAC_MountainCarContinuous/seed1')
-# complete_analysis('library/results/SB3_SAC_Pendulum/seed1/df_process_last_.csv','library/results/SB3_SAC_Pendulum/seed1')
-# complete_analysis('library/results/SB3_SAC_MountainCarContinuous/seed2/df_process_last_.csv','library/results/SB3_SAC_MountainCarContinuous/seed2')
+# complete_analysis('library/results/SB3_PPO_Pendulum/seed1/df_process_train_50.csv','library/results/SB3_PPO_Pendulum/seed1')
+# complete_analysis('library/results/SB3_PPO_Pendulum/seed1/df_process_validation_5_10.csv','library/results/SB3_PPO_Pendulum/seed1')
+# complete_analysis('library/results/SB3_PPO_Pendulum/seed1/df_process_cost_driven_validation_5_0.2.csv','library/results/SB3_PPO_Pendulum/seed1')
 
+# complete_analysis('library/results/SB3_SAC_MountainCarContinuous/seed2/df_process_last_.csv','library/results/SB3_SAC_MountainCarContinuous/seed2')
+# complete_analysis('library/results/SB3_SAC_MountainCarContinuous/seed2/df_process_train_50.csv','library/results/SB3_SAC_MountainCarContinuous/seed2')
+# complete_analysis('library/results/SB3_SAC_MountainCarContinuous/seed2/df_process_validation_5_10.csv','library/results/SB3_SAC_MountainCarContinuous/seed2')
+# complete_analysis('library/results/SB3_SAC_MountainCarContinuous/seed2/df_process_cost_driven_validation_5_0.2.csv','library/results/SB3_SAC_MountainCarContinuous/seed2')
 

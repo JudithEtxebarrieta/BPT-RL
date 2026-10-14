@@ -1439,7 +1439,6 @@ class AppendixGrapher:
 
             general_train_n_ep=int(df_conf.loc[df_conf["pack"] == 'all', "train_opt"].iloc[0])
             general_test_n_ep=int(df_conf.loc[df_conf["pack"] == 'all', "test_cost_freq_opt"].iloc[0].split('_')[0])
-            print(general_test_n_ep,general_train_n_ep)
 
 
             for seed in range(1,n_seeds+1):
@@ -1977,7 +1976,7 @@ class AppendixGrapher:
                 values_clip = np.clip(values, 0, 1)
                 
                 axs_cost[i].imshow(values_clip[np.newaxis, :],cmap=cmap_gwr,norm=norm_gwr,aspect='auto',interpolation='nearest')
-                axs_cost[i].set_ylabel(rf'${{{col.split('_')[0]}}}$', rotation=0,fontsize=8)
+                axs_cost[i].set_ylabel(rf'${{{col.split("_")[0]}}}$', rotation=0,fontsize=8)
                 axs_cost[i].yaxis.set_label_coords(-0.05, 0)
 
             # Limpieza visual
@@ -2414,145 +2413,6 @@ class AppendixGrapher:
                     ax.legend(handles=legend_elements,loc='upper center',bbox_to_anchor=(3.5, -0.2),ncol=5,frameon=False,fontsize=12)
                 else:
                     ax.set_yticklabels(["", "", ""])    
-
-            # def plot_resource_allocation(ax, listas, colors):
-
-            #     mpl.rcParams['hatch.linewidth'] = 0.6
-            #     block_centers = []
-
-            #     # textura por color
-            #     hatch_map = {
-            #         'blue': '..',
-            #         'orange': '//',
-            #         'green': '||',
-            #         'purple': 'xx',
-            #         'black': None
-            #     }
-
-            #     # 1. rango global
-            #     all_data = [x for lista in listas for sub in lista for x in sub]
-            #     min_val = min(all_data)
-            #     max_val = max(all_data)
-
-            #     bins = np.array([
-            #         min_val,
-            #         min_val + 0.25 * (max_val - min_val),
-            #         min_val + 0.75 * (max_val - min_val),
-            #         max_val
-            #     ])
-
-            #     n_groups = len(listas)
-            #     bar_height = (max_val - min_val) * 0.06
-            #     spacing = bar_height * 1.2
-            #     outer_margin = (max_val - min_val) * 0.08
-
-            #     # 2. histogramas
-            #     histogramas = []
-            #     for lista_de_listas in listas:
-            #         datos = [x for sub in lista_de_listas for x in sub]
-            #         counts, _ = np.histogram(datos, bins=bins)
-            #         histogramas.append(counts)
-
-            #     # 3. dibujar
-            #     for b in range(len(bins) - 1):
-
-            #         y_center = (bins[b] + bins[b+1]) / 2
-            #         block_centers.append(y_center)
-
-            #         total_height = (n_groups - 1) * spacing
-            #         start = y_center - total_height / 2
-
-            #         for i, counts in enumerate(histogramas):
-
-            #             y = start + i * spacing
-
-            #             ax.barh(
-            #                 y,
-            #                 counts[b],
-            #                 height=bar_height,
-            #                 left=0,
-            #                 color=colors[i],
-            #                 hatch=hatch_map.get(colors[i], None),
-            #                 edgecolor='black' if colors[i] != 'black' else 'black',
-            #                 linewidth=0
-            #             )
-
-            #     # líneas separadoras entre bloques
-            #     for i in range(len(block_centers) - 1):
-
-            #         y_sep = (block_centers[i] + block_centers[i+1]) / 2
-
-            #         ax.axhline(
-            #             y=y_sep,
-            #             color='black',
-            #             linewidth=0.8,
-            #             zorder=10
-            #         )
-
-            #     # 4. estética
-            #     ax.set_ylim(min_val - outer_margin, max_val + outer_margin)
-            #     ax.set_xlim(0, max(max(h) for h in histogramas) * 1.1)
-
-            #     bin_centers = [(bins[i] + bins[i+1]) / 2 for i in range(len(bins)-1)]
-            #     ax.set_yticks(bin_centers)
-
-            #     ax.set_xlabel('Number of evaluations')
-
-            #     step = 100
-            #     xmin, xmax = ax.get_xlim()
-
-            #     tick_1 = step * round((xmin + (xmax - xmin)/3) / step)
-            #     tick_2 = 2 * tick_1
-
-            #     ax.set_xticks([0, tick_1, tick_2])
-
-            #     if pack_indx == 0:
-            #         ax.set_ylabel('Truth values')
-            #         ax.set_yticklabels(["low", "middle", "high"])
-
-
-            #         legend_elements = [
-            #             mpatches.Patch(
-            #                 facecolor='black',
-            #                 edgecolor='black',
-            #                 label='truth best'
-            #             ),
-            #             mpatches.Patch(
-            #                 facecolor='blue',
-            #                 edgecolor='black',
-            #                 hatch='..',
-            #                 label='last'
-            #             ),
-            #             mpatches.Patch(
-            #                 facecolor='orange',
-            #                 edgecolor='black',
-            #                 hatch='//',
-            #                 label='train'
-            #             ),
-            #             mpatches.Patch(
-            #                 facecolor='purple',   # granate aproximado
-            #                 edgecolor='black',
-            #                 hatch='xx',
-            #                 label='default test'
-            #             ),
-            #             mpatches.Patch(
-            #                 facecolor='green',
-            #                 edgecolor='black',
-            #                 hatch='||',
-            #                 label='cost-driven test'
-            #             )
-            #         ]
-
-            #         ax.legend(
-            #             handles=legend_elements,
-            #             loc='upper center',
-            #             bbox_to_anchor=(1.8, -0.25),
-            #             ncol=5,
-            #             frameon=False,
-            #             handleheight=1.2
-            #         )
-            #     else:
-            #         ax.set_yticklabels(["", "", ""])
 
             def accuracy_evol(matrix_criteria_est,matrix_criteria_truth,plot_yes=False,
                                        curve_truth=None,curve_criteria=None,current_min=None):

@@ -82,15 +82,7 @@ class DataGenerator():
                 PackOptions.PPO_Pendulum(seed,'pack_PPO_Pendulum_seed'+str(seed)+'_',self.data_path,truth_n_workers)
 
 
-# Previous example retained for reference:
-# datagenerator=DataGenerator('Pendulum','final/results/data/SB3_PPO_Pendulum')
-# datagenerator.check_resource_availability(available_CPUs=8)
-#
-# for seed in [1,2,3,4]:
-#     datagenerator.default_process_data(seed,truth_n_workers=6)
-
-
-# NEW: command-line entry point for generating one environment-seed process.
+# Command-line entry point for generating one environment-seed process.
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generate and store one PPO environment-seed learning process."

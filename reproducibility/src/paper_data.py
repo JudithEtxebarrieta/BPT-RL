@@ -24,6 +24,9 @@ env_names = [
 
 ]
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 #==================================================================================================
 # Regions per environment (a and b percentages from T)
 #==================================================================================================
