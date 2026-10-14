@@ -10,9 +10,6 @@ reproducibility/results/data/SB3_PPO_LunarLanderContinuous/*.csv
 reproducibility/results/data/SB3_PPO_Swimmer/*.csv
 reproducibility/results/data/SB3_PPO_Walker2d/*.csv
 
-reproducibility/results/data/SB3_PPO_BipedalWalker/all_data.zip
-reproducibility/results/data/SB3_PPO_Hopper/all_data.zip
-reproducibility/results/data/SB3_PPO_Walker2d/all_data.zip
-reproducibility/results/data/SB3_PPO_HalfCheetah/all_data.zip
 
 paper/
+README_my.md
