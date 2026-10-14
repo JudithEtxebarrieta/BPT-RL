@@ -102,6 +102,8 @@ referencing==0.37.0
 requests==2.33.1
 rich==15.0.0
 rpds-py==0.30.0
+scipy==1.15.3
+seaborn==0.13.2
 six==1.17.0
 smmap==5.0.3
 soupsieve==2.10
