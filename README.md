@@ -180,7 +180,7 @@ The BPT-RL library provides a starting point for these extensions. It adds expli
 | `validation`             | `kappa`, `phi`                         | Validate with `kappa` episodes every `phi` policy iterations and select the best validation estimate.          |
 | `cost_driven_validation` | `kappa`, `phi_c`                       | Select by validation using `kappa` episodes while adapting validation frequency to the cost threshold `phi_c`. |
 
-To run a process, select the matching `PackOptions` method from the environment table below, provide the seed, result directory, criterion configuration, and available CPU resources. The generated process CSV can then be passed to `complete_analysis`, which creates the learning-curve, region, and criterion-diagnosis figures. For example, the following runs  [Soft Actor-Critic (SAC)](https://proceedings.mlr.press/v80/haarnoja18b.html) on MountainCarContinuous with cost-driven validation:
+To run a process, select the matching `PackOptions` method from the environment table below, and provide the seed, result directory, criterion configuration, available CPU resources, and the number of episodes used to estimate the ground-truth reward for each policy. The generated process CSV can then be passed to `complete_analysis`, which creates the learning-curve, region, and criterion-diagnosis figures. For example, the following runs  [Soft Actor-Critic (SAC)](https://proceedings.mlr.press/v80/haarnoja18b.html) on MountainCarContinuous with cost-driven validation:
 
 ```python
 from library.bpt_rl import PackOptions, complete_analysis
@@ -212,7 +212,7 @@ The figures below use the existing SAC–MountainCarContinuous process for seed 
   <img src="library/results/SB3_SAC_MountainCarContinuous/seed2/regions.png" width="480">
 </p>
 
-The learning-curve plots compare the ground-truth reward of the best policy seen so far (black) with the reward of the policy selected by each criterion (gold):
+The learning-curve plots of the ground-truth reward of the best policy seen so far (black) and the evolutions of the reward of the policy selected by each criterion (gold):
 
 <table width="100%" align="center">
   <tr>
@@ -224,7 +224,7 @@ The learning-curve plots compare the ground-truth reward of the best policy seen
     <td align="center" width="250"><code>train</code> (κ = 50)</td>
   </tr>
 
-  <tr>
+<tr>
     <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/learning_curves_validation_5_10.png" width="250"></td>
     <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/learning_curves_cost_driven_validation_5_0.2.png" width="250"></td>
   </tr>
@@ -234,7 +234,7 @@ The learning-curve plots compare the ground-truth reward of the best policy seen
   </tr>
 </table>
 
-The diagnostic plots show degradation (δ), selection accuracy (α), and selection efficiency (ε) by region, using the metrics defined in Equations 9–11 of the paper:
+The diagnostic plots show boxplots of the distribution of degradation (δ), selection accuracy (α), and selection efficiency (ε) by region, using the metrics defined in Equations 9–11 of the paper. The red line in each boxplot marks the median:
 
 <table width="100%" align="center">
   <tr>
@@ -246,7 +246,7 @@ The diagnostic plots show degradation (δ), selection accuracy (α), and selecti
     <td align="center" width="270"><code>train</code> (κ = 50)</td>
   </tr>
 
-  <tr>
+<tr>
     <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/diagnostic_validation_5_10.png" width="270"></td>
     <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/diagnostic_cost_driven_validation_5_0.2.png" width="270"></td>
   </tr>
@@ -256,7 +256,7 @@ The diagnostic plots show degradation (δ), selection accuracy (α), and selecti
   </tr>
 </table>
 
-For this seed, the four selected-reward curves approach similar high rewards by the convergence region, while their paths differ more during initialization and learning. The diagnostics show that degradation follows the same underlying policy sequence across criteria, whereas accuracy and efficiency reflect each criterion's selected policies. The initialization region has the broadest degradation and accuracy ranges; in convergence, degradation is low and accuracy is high for all four criteria. This single process illustrates how the library applies the framework; it is not an aggregate comparison across seeds.
+For this learning process, the four criterion-reward curves approach similar high rewards by the convergence region, while their paths differ more during initialization and learning. In the diagnostic boxplots, degradation has the same distribution across criteria because each criterion is evaluated on the same policy sequence. Its median is higher during initialization and lower in the learning and convergence regions. The selection accuracy and efficiency medians reflect the reliability of each criterion: during initialization, when degradation is higher, the validation-based criteria attain higher accuracy than `train` and `last`; in convergence, validation-based criteria also show higher efficiency. This efficiency advantage is notable because stable rewards in convergence tend to reduce the measured efficiency as learning continues after those rewards have been reached. This single process illustrates how the library applies the framework.
 
 The settings currently included in the library are:
 
@@ -342,10 +342,12 @@ The settings currently included in the library are:
 
 </table>
 
-# Citation 
+# Citation
+
 If you found this work useful, we would appreciate a citation. The corresponding BibTeX citation is given below:
- ```bibtex
- @article{
+
+```bibtex
+@article{
 anonymous2026best,
 title={Best Policy Tracking in Reinforcement Learning},
 author={Anonymous},
@@ -354,10 +356,10 @@ year={2026},
 url={https://openreview.net/forum?id=b4BbTUF8Xe},
 note={Under review}
 }
-
- ```
+```
 
 # References
+
 [1] Antonin Raffin, Ashley Hill, Adam Gleave, Anssi Kanervisto, Maximilian Ernestus, and Noah Dormann.
 Stable-baselines3: Reliable reinforcement learning implementations. Journal of Machine Learning Research, 22:1–8, 2021.
 
@@ -372,5 +374,3 @@ Schulhoff, Jun Jet Tai, Hannah Tan, and Omar G. Younis. Gymnasium: A Standard In
 [5] Judith Echevarrieta, Etor Arza, Aritz Pérez, and Josu Ceberio. Best policy tracking in gradient-based optimization. Actas del XVI Congreso Español de Metaheurísticas, Algoritmos Evolutivos y Bioinspirados (MAEB 2025), 291-295. URL https://openreview.net/forum?id=DcSno6F6o3
 
 [6] Judith Echevarrieta, Etor Arza, Aritz Pérez, and Josu Ceberio. Best Policy Tracking in Reinforcement Learning. Submitted to Transactions on Machine Learning Research. 
-
-
