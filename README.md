@@ -8,7 +8,7 @@ This repository accompanies the paper *Best Policy Tracking in Reinforcement Lea
 
 <img src="others/diagram_summary_text.png">
 
-*Figure. The left panel summarizes an interaction-based Single-Task Policy Optimization (STPO) process and the open questions obscured by black-box policy selection in common RL practice. The right panel illustrates the systematic study of selection criteria using measures of performance degradation ($\delta$), selection accuracy ($\alpha$), and selection efficiency ($\varepsilon$) across different learning scenarios.*
+*Figure. The left panel summarizes an interaction-based Single-Task Policy Optimization (STPO) process and the open questions obscured by black-box policy selection in common RL practice. The right panel illustrates the systematic study of selection criteria using measures of performance degradation (*$\delta$*), selection accuracy (*$\alpha$*), and selection efficiency (*$\varepsilon$*) across different learning scenarios.*
 
 ### How is the learned policy selected in common RL practice?
 
@@ -16,7 +16,7 @@ In common experimental practice with widely used open-source RL libraries, polic
 
 ### What contributes this work?
 
-The paper makes policy selection explicit by formalizing three simple criteria identified in common RL libraries—*last*, *train*, and *validation*—within a unified framework. It also introduces post-hoc diagnostic metrics for performance degradation ($\delta_t$), selection accuracy ($\alpha_t$), and selection efficiency ($\varepsilon_t$). These metrics support a systematic empirical assessment of the criteria across representative actor-critic continuous-control settings exhibiting diverse non-monotonic learning dynamics.
+The paper makes policy selection explicit by formalizing three simple criteria identified in common RL libraries —*last*, *train*, and *validation*—within a unified framework. It also introduces post-hoc diagnostic metrics for performance degradation ($\delta_t$), selection accuracy ($\alpha_t$), and selection efficiency ($\varepsilon_t$). These metrics support a systematic empirical assessment of the criteria across representative actor-critic continuous-control settings exhibiting diverse non-monotonic learning dynamics.
 
 ### What show the results?
 
@@ -25,11 +25,12 @@ The results show that common selection criteria can return a policy that perform
 ### What contains this repository?
 
 - `reproducibility/` contains scripts and data-processing code for reproducing the paper's experiments, analyses, and figures.
-- `library/` provides a separate BPT-RL tool for running supported Stable-Baselines3 methods and environments with configurations based on RL Baselines3 Zoo, explicitly choosing the policy-selection criterion, and analyzing learning processes. It can also serve as a basis for extending these procedures.
+- `library/` provides a separate BPT-RL tool for running supported  [Stable-Baselines3](https://stable-baselines3.readthedocs.io/en/master/) methods and environments with configurations based on [RL Baselines3 Zoo](https://stable-baselines3.readthedocs.io/en/master/guide/rl_zoo.html), explicitly choosing the policy-selection criterion, and analyzing learning processes. It can also serve as a basis for extending these procedures.
 
 ## Reproducibility
 
-The paper's empirical analysis examines a representative setting using Proximal Policy Optimization (PPO) and seven standard continuous-control benchmark environments: two based on Box2D and five based on MuJoCo. Each method–environment combination is evaluated across 30 random seeds. The steps below describe how to generate the learning-process data, derive the analysis data, and reproduce the figures.
+The paper's empirical analysis examines a representative setting using [Proximal Policy Optimization (PPO)](
+https://doi.org/10.48550/arXiv.1707.06347) and seven standard continuous-control benchmark environments: two based on [Box2D](https://gymnasium.farama.org/environments/box2d/) and five based on [MuJoCo](https://gymnasium.farama.org/environments/mujoco/). Each method–environment combination is evaluated across 30 random seeds. The steps below describe how to generate the learning-process data, derive the analysis data, and reproduce the figures.
 
 ### Step 0: Install dependencies
 
@@ -86,7 +87,7 @@ For the paper analysis, use seeds 1 through 30 and each of the seven benchmark e
 | `df_last_est.csv`, `df_train_est.csv`, `df_test_est.csv`, `df_test_cost.csv`, `df_test_n_ep.csv` | Training and validation estimates and the associated validation costs and episode counts.                                                                                                                                                                                  |
 | `df_train_all_seq_est.csv`, `df_test_all_seq_est.csv`, `df_test_all_seq_cost_len.csv`            | Estimates and validation episode-cost details across the full policy sequences.                                                                                                                                                                                            |
 
-The repository provides an `all_data.zip` archive for each of the seven paper environments under `reproducibility/results/data/SB3_PPO_<environment>/`. These archives contain the derived analysis data used to generate the figures. If process data are available, the analysis CSVs can instead be regenerated with the command above.
+The repository provides `all_last_data.zip`, `all_train_data.zip`, `all_test_data.zip`, `all_test_cost_data.zip` and `global_data.zip` archives for each of the seven paper environments under `reproducibility/results/data/SB3_PPO_<environment>/`. These archives contain the derived analysis data used to generate the figures. If process data are available, the analysis CSVs can instead be regenerated with the command above.
 
 Once analysis data are available for all seven paper environments, run the common-data script from the repository root with the project environment activated. It extracts any available archives and calculates shared criterion configurations. The script takes no additional arguments:
 
@@ -179,21 +180,22 @@ The BPT-RL library provides a starting point for these extensions. It adds expli
 | `validation`             | `kappa`, `phi`                         | Validate with `kappa` episodes every `phi` policy iterations and select the best validation estimate.          |
 | `cost_driven_validation` | `kappa`, `phi_c`                       | Select by validation using `kappa` episodes while adapting validation frequency to the cost threshold `phi_c`. |
 
-To run a process, select the matching `PackOptions` method from the environment table below, provide the seed, result directory, criterion configuration, and available CPU resources. The generated process CSV can then be passed to `complete_analysis`, which creates the learning-curve, region, and criterion-diagnosis figures. For example, the following runs SAC on MountainCarContinuous with cost-driven validation:
+To run a process, select the matching `PackOptions` method from the environment table below, provide the seed, result directory, criterion configuration, and available CPU resources. The generated process CSV can then be passed to `complete_analysis`, which creates the learning-curve, region, and criterion-diagnosis figures. For example, the following runs  [Soft Actor-Critic (SAC)](https://proceedings.mlr.press/v80/haarnoja18b.html) on MountainCarContinuous with cost-driven validation:
 
 ```python
 from library.bpt_rl import PackOptions, complete_analysis
 
 # Run one learning process with the selected criterion.
 PackOptions.SAC_MountainCarContinuous(
-    1,
+    2,
     "library/results",
     {"name": "cost_driven_validation", "kappa": 5, "phi": None, "phi_c": 0.2},
     available_resources=6,
+    n_eval_ep=5
 )
 
 # Directory containing the process CSV and destination for the diagnostic figures.
-process_dir = "library/results/SB3_SAC_MountainCarContinuous/seed1"
+process_dir = "library/results/SB3_SAC_MountainCarContinuous/seed2"
 # Path to the CSV generated by the learning process.
 process_csv = f"{process_dir}/df_process_cost_driven_validation_5_0.2.csv"
 # Generate the learning-curve, region, and criterion-diagnosis figures.
@@ -204,26 +206,31 @@ The library also includes PPO with Pendulum, MountainCarContinuous, LunarLanderC
 
 #### Example: SAC on MountainCarContinuous
 
-The figures below use the existing SAC–MountainCarContinuous process for seed 1. The region boundaries follow the post-hoc definition in Equation 12 of the paper: the policy sequence is divided at `a` and `b` into initialization `[0, a]`, learning `[a, b]`, and convergence `[b, T]`.
+The figures below use the existing SAC–MountainCarContinuous process for seed 2. The region boundaries follow the post-hoc definition in Equation 12 of the paper: the policy sequence is divided at `a` and `b` into initialization `[0, a]`, learning `[a, b]`, and convergence `[b, T]`.
 
 <p align="center">
-  <img src="library/results/SB3_SAC_MountainCarContinuous/seed1/regions.png" width="480">
+  <img src="library/results/SB3_SAC_MountainCarContinuous/seed2/regions.png" width="480">
 </p>
 
 The learning-curve plots compare the ground-truth reward of the best policy seen so far (black) with the reward of the policy selected by each criterion (gold):
 
 <table width="100%" align="center">
   <tr>
-    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed1/learning_curves_last_.png" width="200"></td>
-    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed1/learning_curves_train_50.png" width="200"></td>
-    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed1/learning_curves_validation_5_10.png" width="200"></td>
-    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed1/learning_curves_cost_driven_validation_5_0.2.png" width="200"></td>
+    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/learning_curves_last_.png" width="250"></td>
+    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/learning_curves_train_50.png" width="250"></td>
   </tr>
   <tr>
-    <td align="center" width="200"><code>last</code></td>
-    <td align="center" width="200"><code>train</code> <br>(κ = 50)</td>
-    <td align="center" width="200"><code>validation</code> <br>(κ = 5, φ = 10)</td>
-    <td align="center" width="200"><code>cost_driven_validation</code><br> (κ = 5, φ<sub>c</sub> = 0.2)</td>
+    <td align="center" width="250"><code>last</code></td>
+    <td align="center" width="250"><code>train</code> (κ = 50)</td>
+  </tr>
+
+  <tr>
+    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/learning_curves_validation_5_10.png" width="250"></td>
+    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/learning_curves_cost_driven_validation_5_0.2.png" width="250"></td>
+  </tr>
+  <tr>
+    <td align="center" width="250"><code>validation</code> (κ = 5, φ = 10)</td>
+    <td align="center" width="250"><code>cost_driven_validation</code> <br>(κ = 5, φ<sub>c</sub> = 0.2)</td>
   </tr>
 </table>
 
@@ -231,16 +238,21 @@ The diagnostic plots show degradation (δ), selection accuracy (α), and selecti
 
 <table width="100%" align="center">
   <tr>
-    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed1/diagnostic_last_.png" width="200"></td>
-    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed1/diagnostic_train_50.png" width="200"></td>
-    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed1/diagnostic_validation_5_10.png" width="200"></td>
-    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed1/diagnostic_cost_driven_validation_5_0.2.png" width="200"></td>
+    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/diagnostic_last_.png" width="270"></td>
+    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/diagnostic_train_50.png" width="270"></td>
   </tr>
   <tr>
-    <td align="center" width="200"><code>last</code></td>
-    <td align="center" width="200"><code>train</code><br> (κ = 50)</td>
-    <td align="center" width="200"><code>validation</code><br> (κ = 5, φ = 10)</td>
-    <td align="center" width="200"><code>cost_driven_validation</code> <br>(κ = 5, φ<sub>c</sub> = 0.2)</td>
+    <td align="center" width="270"><code>last</code></td>
+    <td align="center" width="270"><code>train</code> (κ = 50)</td>
+  </tr>
+
+  <tr>
+    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/diagnostic_validation_5_10.png" width="270"></td>
+    <td align="center"><img src="library/results/SB3_SAC_MountainCarContinuous/seed2/diagnostic_cost_driven_validation_5_0.2.png" width="270"></td>
+  </tr>
+  <tr>
+    <td align="center" width="270"><code>validation</code>  (κ = 5, φ = 10)</td>
+    <td align="center" width="270"><code>cost_driven_validation</code> <br> (κ = 5, φ<sub>c</sub> = 0.2)</td>
   </tr>
 </table>
 
@@ -252,12 +264,12 @@ The settings currently included in the library are:
   <tr>
     <th>Engine</th>
     <th>Environment</th>
-    <th>PPO</th>
-    <th>SAC</th>
+    <th><a href="https://arxiv.org/abs/1707.06347">PPO</a> </th>
+    <th><a href="https://proceedings.mlr.press/v80/haarnoja18b.html">SAC</a> </th>
   </tr>
 
 <tr>
-    <td>Classic Control</td>
+    <td> <a href="https://gymnasium.farama.org/environments/classic_control/">Classic Control</a> </td>
     <td>
       <table>
         <tr>
@@ -277,7 +289,7 @@ The settings currently included in the library are:
   </tr>
 
 <tr>
-    <td>Box2D</td>
+    <td><a href="https://gymnasium.farama.org/environments/box2d/">Box2D</a></td>
     <td>
       <table>
         <tr>
@@ -297,7 +309,7 @@ The settings currently included in the library are:
   </tr>
 
 <tr>
-    <td>MuJoCo</td>
+    <td><a href="https://gymnasium.farama.org/environments/mujoco/">MuJoCo</a></td>
     <td>
       <table>
         <tr>
@@ -330,13 +342,35 @@ The settings currently included in the library are:
 
 </table>
 
-# Pendientes
+# Citation 
+If you found this work useful, we would appreciate a citation. The corresponding BibTeX citation is given below:
+ ```bibtex
+ @article{
+anonymous2026best,
+title={Best Policy Tracking in Reinforcement Learning},
+author={Anonymous},
+journal={Submitted to Transactions on Machine Learning Research},
+year={2026},
+url={https://openreview.net/forum?id=b4BbTUF8Xe},
+note={Under review}
+}
 
-- [ ] Traducir a ingles los comentarios de ciertos scripts
-- [ ] Corregir en la definicion de `accuracy` del script `bpt_rl.py`, considerando el tiempo extra del criterios de validacion
-- [ ] Añadir en el script pertinente de la carpeta `reproducibility` la generacion de la tabla añadida en el apendice B.1 tras la revision
-- [ ] En `bpt_rl.py` quedan algunas funciones con TODOs por si en un futuro decido incorporar criterios de seleccion mejorados a esta "libreria", e.g., una criterio de validacion mejorado con el checkpointing TD7 o un criterio train mejorado con estimaciones OPE (quiza esto lo necesite para esta revision en TMLR, porque todavia no hemos terminado)
-- [ ] Faltan por commitear ciertos `all_data.zip` que or tamaño no me deja
-- [ ] Añadir al README el como citar este paper
-- [ ] Añadir al readme enlaces a cietar referencias como: SB3, Baselines zoo, ...
-- [ ] Hacer publico el repositorio en GitHub (ahora esta privado), y privatizar el que esta publico ahora porque ya ha quedado obsoleto (contiene todo lo hecho en los dos años anteriores hasta llegar al articulo final)
+ ```
+
+# References
+[1] Antonin Raffin, Ashley Hill, Adam Gleave, Anssi Kanervisto, Maximilian Ernestus, and Noah Dormann.
+Stable-baselines3: Reliable reinforcement learning implementations. Journal of Machine Learning Research, 22:1–8, 2021.
+
+[2] Antonin Raffin. RL Baselines3 Zoo. GitHub repository, 2020. URL https://github.com/DLR-RM/rl-baselines3-zoo.
+
+[3] Mark Towers, Ariel Kwiatkowski, Jordan Terry, John U. Balis, Gianluca De Cola, Tristan Deleu, Manuel
+Goulão, Andreas Kallinteris, Markus Krimmel, Arjun KG, Rodrigo Perez-Vicente, Andrea Pierré, Sander
+Schulhoff, Jun Jet Tai, Hannah Tan, and Omar G. Younis. Gymnasium: A Standard Interface for Reinforcement Learning Environments, November 2025. URL http://arxiv.org/abs/2407.17032.
+
+[4] John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov. Proximal Policy Optimization Algorithms, 2017. URL https://arxiv.org/abs/1707.06347.
+
+[5] Judith Echevarrieta, Etor Arza, Aritz Pérez, and Josu Ceberio. Best policy tracking in gradient-based optimization. Actas del XVI Congreso Español de Metaheurísticas, Algoritmos Evolutivos y Bioinspirados (MAEB 2025), 291-295. URL https://openreview.net/forum?id=DcSno6F6o3
+
+[6] Judith Echevarrieta, Etor Arza, Aritz Pérez, and Josu Ceberio. Best Policy Tracking in Reinforcement Learning. Submitted to Transactions on Machine Learning Research. 
+
+
