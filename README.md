@@ -81,7 +81,7 @@ For the paper analysis, use seeds 1 through 30 and each of the seven benchmark e
 | Files                                                                                            | Contents                                                                                                                                                                                                                                                                   |
 | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `learning_regions.csv`, `deg_evolution.csv`                                                      | Learning-region boundaries and degradation over the policy sequence.                                                                                                                                                                                                       |
-| `df_best_truth.csv`, `df_last_truth.csv`, `df_train_truth.csv`, `df_test_truth.csv`              | Ground-truth rewards for the best policy and policies selected by the criteria; `test` denotes validation-based selection.                                                                                                                                                 |
+| `df_best_truth.csv`, `df_last_truth.csv`, `df_train_truth.csv`, `df_test_truth.csv`              | Ground-truth returns for the best policy and policies selected by the criteria; `test` denotes validation-based selection.                                                                                                                                                 |
 | `df_last_prec.csv`, `df_train_prec.csv`, `df_test_prec.csv`                                      | Selection accuracy over the sequence for the criterion configurations.                                                                                                                                                                                                     |
 | `df_last_eff.csv`, `df_train_eff.csv`, `df_test_eff.csv`                                         | Selection efficiency over the sequence for the criterion configurations selected for the final analysis. Unlike accuracy, which is evaluated across a grid of possible configurations during sensitivity analysis, efficiency is reported for the selected configurations. |
 | `df_last_est.csv`, `df_train_est.csv`, `df_test_est.csv`, `df_test_cost.csv`, `df_test_n_ep.csv` | Training and validation estimates and the associated validation costs and episode counts.                                                                                                                                                                                  |
@@ -145,7 +145,7 @@ python -m reproducibility.generate_graphs \
 
 ##### Auxiliary figures and paper tables
 
-The synthetic reward sequences in `reproducibility/results/data/paper/synthetic/` are used to generate the auxiliary illustrations in Figures 2–5. These figures demonstrate degradation (Figure 2), selection accuracy (Figure 3), selection efficiency (Figure 4), and the learning-region boundaries (Figure 5). Generate them from the repository root with:
+The synthetic return sequences in `reproducibility/results/data/paper/synthetic/` are used to generate the auxiliary illustrations in Figures 2–5. These figures demonstrate degradation (Figure 2), selection accuracy (Figure 3), selection efficiency (Figure 4), and the learning-region boundaries (Figure 5). Generate them from the repository root with:
 
 ```bash
 python -m reproducibility.src.paper_figures
@@ -166,7 +166,7 @@ The generated tables are saved under `reproducibility/results/data/paper/`.
 The paper's empirical study shows why policy selection matters for reliable reinforcement-learning results: the criterion can affect both how accurately the best visited policy is identified and how efficiently learning time is used. The study also motivates further work beyond its PPO benchmark setting. The discussion identifies several directions:
 
 - Extend the analysis to off-policy algorithms, discrete-action environments, and more realistic domains.
-- Improve training-based reward estimates, for example by incorporating off-policy evaluation.
+- Improve training-based return estimates, for example by incorporating off-policy evaluation.
 - Reduce validation costs using adaptive or event-triggered evaluation and early termination of evaluations when a policy is unlikely to be selected.
 - Study how selection criteria affect learning-curve comparisons and resource-allocation methods such as successive halving, including the effects of smoothing learning curves.
 - Adapt the validation-to-learning cost threshold to balance best-policy tracking accuracy against evaluation overhead.
@@ -176,11 +176,11 @@ The BPT-RL library provides a starting point for these extensions. It adds expli
 | Criterion                | Configuration fields                   | Meaning                                                                                                        |
 | ------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `last`                   | `kappa=None`, `phi=None`, `phi_c=None` | Select the latest policy.                                                                                      |
-| `train`                  | `kappa`                                | Select using the training reward estimate based on `kappa` episodes.                                           |
+| `train`                  | `kappa`                                | Select using the training return estimate based on `kappa` episodes.                                           |
 | `validation`             | `kappa`, `phi`                         | Validate with `kappa` episodes every `phi` policy iterations and select the best validation estimate.          |
 | `cost_driven_validation` | `kappa`, `phi_c`                       | Select by validation using `kappa` episodes while adapting validation frequency to the cost threshold `phi_c`. |
 
-To run a process, select the matching `PackOptions` method from the environment table below, and provide the seed, result directory, criterion configuration, available CPU resources, and the number of episodes used to estimate the ground-truth reward for each policy. The generated process CSV can then be passed to `complete_analysis`, which creates the learning-curve, region, and criterion-diagnosis figures. For example, the following runs  [Soft Actor-Critic (SAC)](https://proceedings.mlr.press/v80/haarnoja18b.html) on MountainCarContinuous with cost-driven validation:
+To run a process, select the matching `PackOptions` method from the environment table below, and provide the seed, result directory, criterion configuration, available CPU resources, and the number of episodes used to estimate the ground-truth return for each policy. The generated process CSV can then be passed to `complete_analysis`, which creates the learning-curve, region, and criterion-diagnosis figures. For example, the following runs  [Soft Actor-Critic (SAC)](https://proceedings.mlr.press/v80/haarnoja18b.html) on MountainCarContinuous with cost-driven validation:
 
 ```python
 from library.bpt_rl import PackOptions, complete_analysis
@@ -212,7 +212,7 @@ The figures below use the existing SAC–MountainCarContinuous process for seed 
   <img src="library/results/SB3_SAC_MountainCarContinuous/seed2/regions.png" width="480">
 </p>
 
-The learning-curve plots of the ground-truth reward of the best policy seen so far (black) and the evolutions of the reward of the policy selected by each criterion (gold):
+The learning-curve plots of the ground-truth return of the best policy seen so far (black) and the evolutions of the return of the policy selected by each criterion (gold):
 
 <table width="100%" align="center">
   <tr>
@@ -256,7 +256,7 @@ The diagnostic plots show boxplots of the distribution of degradation (δ), sele
   </tr>
 </table>
 
-For this learning process, the four criterion-reward curves approach similar high rewards by the convergence region, while their paths differ more during initialization and learning. In the diagnostic boxplots, degradation has the same distribution across criteria because each criterion is evaluated on the same policy sequence. Its median is higher during initialization and lower in the learning and convergence regions. The selection accuracy and efficiency medians reflect the reliability of each criterion: during initialization, when degradation is higher, the validation-based criteria attain higher accuracy than `train` and `last`; in convergence, validation-based criteria also show higher efficiency. This efficiency advantage is notable because stable rewards in convergence tend to reduce the measured efficiency as learning continues after those rewards have been reached. This single process illustrates how the library applies the framework.
+For this learning process, the four criterion-return curves approach similar high returns by the convergence region, while their paths differ more during initialization and learning. In the diagnostic boxplots, degradation has the same distribution across criteria because each criterion is evaluated on the same policy sequence. Its median is higher during initialization and lower in the learning and convergence regions. The selection accuracy and efficiency medians reflect the reliability of each criterion: during initialization, when degradation is higher, the validation-based criteria attain higher accuracy than `train` and `last`; in convergence, validation-based criteria also show higher efficiency. This efficiency advantage is notable because stable returns in convergence tend to reduce the measured efficiency as learning continues after those returns have been reached. This single process illustrates how the library applies the framework.
 
 The settings currently included in the library are:
 
