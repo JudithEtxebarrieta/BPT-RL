@@ -22,6 +22,7 @@ def main():
 
     grapher = AppendixGrapher(args.data_path, args.figure_path)
     grapher.estimations()
+    grapher.estimations(ordering=True,n_seeds=30)
     grapher.estimations(train_white=True)
     grapher.estimations_selected_conf()
     grapher.criteria_configurations()

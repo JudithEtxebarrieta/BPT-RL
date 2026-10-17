@@ -23,6 +23,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 import matplotlib.lines as mlines
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
+from scipy.stats import spearmanr
 
 #==================================================================================================
 # Common functions
@@ -1300,7 +1301,7 @@ class AppendixGrapher:
         self.data_path=data_path
         self.figure_path=figure_path
 
-    def estimations(self,train_white=False):
+    def estimations(self,train_white=False,ordering=False,n_seeds=5):
 
 
         def plot_analysis_per_seed(ax,truth,cols_test,cols_train,first_row,last_row,first_column,center_row=False,center_column=False):
@@ -1347,10 +1348,12 @@ class AppendixGrapher:
                 for line in leg.get_lines():
                     line.set_linewidth(3)
 
-        n_seeds=5
 
         fig, axs = plt.subplots(n_seeds,len(self.all_packs), figsize=(2.5*len(self.all_packs),1.2*n_seeds),sharex='col',sharey='col')
         plt.subplots_adjust(top=0.95,bottom=0.13,left=0.03,right=0.99, hspace=0.1,wspace=0.2)
+
+        if ordering:
+            df_est_ord = pd.DataFrame({'Episodes': [5, 25, 50, 100, 250, 500]})
 
 
         for i,pack in enumerate(self.all_packs):
@@ -1358,6 +1361,7 @@ class AppendixGrapher:
             df_test=pd.read_csv(self.data_path+'/'+pack.replace('pack','SB3')+'/df_test_all_seq_est.csv')
             df_train=pd.read_csv(self.data_path+'/'+pack.replace('pack','SB3')+'/df_train_all_seq_est.csv')
 
+            corr_ordering_per_n_ep=[[],[],[],[],[],[]]
             
             for seed in range(1,n_seeds+1):
 
@@ -1371,12 +1375,27 @@ class AppendixGrapher:
                 cols_test=cols_test.applymap(lambda x: DataConverter.compress_decompress_list(x,compress=False)[0])
                 cols_train = df_train[[c for c in df_train.columns if c.endswith('_seed'+str(seed))]]
 
-                plot_analysis_per_seed(axs[seed-1,i],truth,cols_test,cols_train,first_row,last_row,first_column,center_row=center_row)
+                if ordering==False:
+                    plot_analysis_per_seed(axs[seed-1,i],truth,cols_test,cols_train,first_row,last_row,first_column,center_row=center_row)
+                else:
+                    for i,col in enumerate(cols_test.columns[::-1]):
+                        corr_ordering_per_n_ep[i]+=[spearmanr(truth, cols_test[col].values).statistic]
 
-        if train_white:
-            plt.savefig(self.figure_path+'/appendix/estimations_only_test.pdf')
-        if not train_white:
-            plt.savefig(self.figure_path+'/appendix/estimations.pdf')
+            if ordering:
+                current_env_data = [f"{np.mean(x):.3f} ± {np.std(x):.3f}" for x in corr_ordering_per_n_ep]
+                df_est_ord[str(pack)] = current_env_data
+
+        if ordering==False: 
+            if train_white:
+                plt.savefig(self.figure_path+'/appendix/estimations_only_test.pdf')
+            if not train_white:
+                plt.savefig(self.figure_path+'/appendix/estimations.pdf')
+        else:
+            df_est_ord.to_csv(self.data_path+'/paper/df_estimations_ordering.csv', index=False)
+            df_est_ord.to_latex(self.data_path+'/paper/df_estimations_ordering.tex', index=False)
+
+
+
 
     def estimations_selected_conf(self):
 
