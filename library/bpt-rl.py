@@ -1941,7 +1941,7 @@ class ProcessAnalysis:
         plt.plot(truth_best, color="black", label="ground truth",linewidth=1)
         plt.plot(truth_selec, color="gold", label="criteria",linewidth=1)
         plt.xlabel('learning iteration')
-        plt.ylabel('policy reward')
+        plt.ylabel('policy return')
 
         # Leyenda fuera de la gráfica, debajo
         plt.legend(
@@ -1979,7 +1979,7 @@ class ProcessAnalysis:
         )
 
         plt.xlabel('learning iteration')
-        plt.ylabel('last policy reward')
+        plt.ylabel('last policy return')
         plt.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
 
         plt.savefig(self.figure_path+'/regions.pdf')

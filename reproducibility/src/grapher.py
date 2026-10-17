@@ -2408,7 +2408,7 @@ class AppendixGrapher:
                 ax.set_xticklabels([r'$0$', rf'${{{tick_1}}}$', rf'${{{tick_2}}}$'],fontsize=12)
                         
                 if pack_indx == 0:
-                    ax.set_ylabel('Truth reward values',fontsize=12)
+                    ax.set_ylabel('Truth return values',fontsize=12)
                     ax.set_yticklabels(["low", "middle", "high"],fontsize=12)
                     ax.legend(handles=legend_elements,loc='upper center',bbox_to_anchor=(3.5, -0.2),ncol=5,frameon=False,fontsize=12)
                 else:
@@ -2738,14 +2738,14 @@ class AppendixGrapher:
         legend_elements = [
             Line2D([0], [0], marker=6, color='#3cb371',
                 markerfacecolor='#3cb371', markersize=10,lw=2,
-                label='high reward evaluations'),
+                label='high return evaluations'),
             
             Line2D([0], [0], marker=7, color="#e65858",
                 markerfacecolor="#e65858", markersize=10, lw=2,
-                label='low reward evaluations'),
+                label='low return evaluations'),
             
             Line2D([0], [0], color="#815513", lw=2,
-                label='middle reward evaluations'),
+                label='middle return evaluations'),
 
             Line2D([0], [0], color='red', alpha=0.5, lw=7,
            label='interquartile range'),

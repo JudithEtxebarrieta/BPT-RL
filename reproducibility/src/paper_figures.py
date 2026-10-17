@@ -250,7 +250,7 @@ def plot_precision(ax,truth_last):
     mlines.Line2D([], [], color='grey', linestyle='-', linewidth=6, alpha=0.3,label=r'denominator of $\alpha_t$'),
     mlines.Line2D([], [], color='orange', linestyle='-', linewidth=6, alpha=0.5,label=r'numerator of $\alpha_t$ for selection 1'),
     mlines.Line2D([], [], color='green', linestyle='-', linewidth=6, alpha=0.5,label=r'numerator of $\alpha_t$ for selection 2'),
-    mlines.Line2D([], [], color='blue', linestyle='--',linewidth=2, label=r"reward evolution by investing validation time learning"),
+    mlines.Line2D([], [], color='blue', linestyle='--',linewidth=2, label=r"return evolution by investing validation time learning"),
 ]
 
     leg1 = ax.legend(handles=legend_handles[:2],loc='upper center',bbox_to_anchor=(0.43, -0.16),ncol=2,frameon=False,fontsize=11,columnspacing=1.5,handlelength=1)
@@ -306,7 +306,7 @@ def plot_efficiency(ax,truth_last):
     mlines.Line2D([], [], color='grey', linestyle='-', linewidth=6, alpha=0.3,label=r'denominator of $\varepsilon_t$ '),
         mlines.Line2D([], [], color='orange', linestyle='-', linewidth=6, alpha=0.5,label=r'numerator of $\varepsilon_t$ for selection 1'),
     mlines.Line2D([], [], color='green', linestyle='-', linewidth=6, alpha=0.5,label=r'numerator of $\varepsilon_t$ for selection 2'),
-    mlines.Line2D([], [], color='black', marker='x', linestyle='None',markersize=7, label='first time with same reward'),
+    mlines.Line2D([], [], color='black', marker='x', linestyle='None',markersize=7, label='first time with same return'),
     ]
 
 
