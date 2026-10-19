@@ -558,7 +558,7 @@ class MainGrapher():
 
     def deg_prec_eff(self):
 
-        # Funcion para extraer datos de interes
+        # Function for extracting relevant data.
         data_deg=[[0,0,0] for _ in range(4)]
         data_acc_last,data_acc_train,data_acc_test=[[0,0,0] for _ in range(4)],[[0,0,0] for _ in range(4)],[[0,0,0] for _ in range(4)]
         data_eff_last,data_eff_train,data_eff_test=[[0,0,0] for _ in range(4)],[[0,0,0] for _ in range(4)],[[0,0,0] for _ in range(4)]
@@ -581,7 +581,7 @@ class MainGrapher():
 
             return count_list
 
-        # Funciones para plotear datos pack-region
+        # Functions for plotting pack-region data.
         def plot_pack_degradation(ax,deg_list,pack_name='',title='',not_last_pack=False,main_title='',xlabel=''):
 
             data = np.array(deg_list)
@@ -592,16 +592,16 @@ class MainGrapher():
             
             percentages = counts / counts.sum() 
 
-            # Escala de gris
+            # Grayscale.
             colors = [str(1 - p) for p in percentages]
 
             bin_width = bin_edges[1] - bin_edges[0]
 
-            # Dibujar barras todas de la misma altura (e.g, 1)
+            # Draw bars that are all the same height (e.g. 1).
             for left, color in zip(bin_edges[:-1], colors):
                 ax.bar(left, 1, width=bin_width, color=color, edgecolor=None, align='edge')
 
-            # Linea de la mediana
+            # Median line.
             ax.axvline(np.median(data), color='red',linewidth=2)
 
             ax.set_xlim(-0.05, 1.05)
@@ -652,26 +652,26 @@ class MainGrapher():
                     ]
                     ax.legend(handles=legend_elements, loc='upper center',bbox_to_anchor=(1.5, -0.7), ncol=3, frameon=False,fontsize=14)
             
-        # Cargar datos necesarios
+        # Load the required data.
         df_conf=pd.read_csv(self.data_path+'/configurations.csv')
         train_conf=str(int(df_conf.loc[df_conf["pack"] == 'all', "train_opt"].iloc[0]))
         conf_str=df_conf.loc[df_conf["pack"] == 'all', "test_cost_freq_opt"].iloc[0]
         test_conf=conf_str.split('_')[0]+'_'+conf_str.split('_')[1]+'cost'
             
-        # Graficas
+        # Graphs.
         fig, axs = plt.subplots(len(self.all_packs),3*3+2, figsize=(5*3,0.65*len(self.all_packs)),
                                     gridspec_kw={'width_ratios': [1,1,1,0.35,1,1,1,0.35,1,1,1]})
         plt.subplots_adjust(top=0.9,bottom=0.15,left=0.03,right=0.99, hspace=0.0,wspace=0.0)
 
-        #---- Degradacion
+        #---- Degradation.
         for i,pack in enumerate(self.all_packs):
 
             pack_path=self.data_path+'/'+pack.replace('pack',self.library)+'/'
 
-            # Obtener los datos de degradacion por region de este pack
+            # Get the degradation data by region for this pack.
             deg1,deg2,deg3=from_df_data_to_graph_data([pack_path+'learning_regions.csv',pack_path+'deg_evolution.csv'],pack,'deg_distribution') 
 
-            # Dibujar distribucion de degradacion de las tres regiones
+            # Plot the degradation distribution for the three regions.
             title=[['Initialization','Learning','Convergence']if i==0 else ['']*3][0]
             main_title=[r'\textbf{Degradation}' if i==0 else ''][0]
             xlabel=r'$\delta$'
@@ -680,16 +680,16 @@ class MainGrapher():
             plot_pack_degradation(axs[i,1],deg2,title=title[1],not_last_pack=not_last_pack,main_title=main_title,xlabel=xlabel)
             plot_pack_degradation(axs[i,2],deg3,title=title[2],not_last_pack=not_last_pack)
 
-            # Actualizar datos de interes
+            # Update data of interest.
             data_deg=from_metric_data_to_count(deg1,deg2,deg3,data_deg)
 
-        #---- Precision
+        #---- Accuracy.
         prec_or_eff='prec'
         for i,pack in enumerate(self.all_packs):
 
             pack_path=self.data_path+'/'+pack.replace('pack',self.library)+'/'
 
-            # Obtener los datos de prec/eff por region de este pack
+            # Get the prec/eff data by region for this pack.
             last1,last2,last3=from_df_data_to_graph_data(
                             [pack_path+'learning_regions.csv',pack_path+'df_last_'+prec_or_eff+'.csv'],pack,which_graph='last_'+prec_or_eff)
             train1,train2,train3=from_df_data_to_graph_data(
@@ -701,7 +701,7 @@ class MainGrapher():
                             test_conf=test_conf
                         )
             
-            # Dibujar distribucion de prec/eff de las tres regiones
+            # Plot the prec/eff distribution for the three regions.
             title=[['Initialization','Learning ','Convergence']if i==0 else ['']*3][0]
             main_title=[r'\textbf{Accuracy}' if i==0 else ''][0]
             xlabel=r'$\alpha$'
@@ -710,18 +710,18 @@ class MainGrapher():
             plot_pack_criteria_prec_or_eff(axs[i,5],[last2,train2,test2][::-1],title=title[1],last_pack=last_pack,main_title=main_title,xlabel=xlabel)
             plot_pack_criteria_prec_or_eff(axs[i,6],[last3,train3,test3][::-1],title=title[2],last_pack=last_pack)
 
-            # Actualizar datos de interes
+            # Update data of interest.
             data_acc_last=from_metric_data_to_count(last1,last2,last3,data_acc_last)
             data_acc_train=from_metric_data_to_count(train1,train2,train3,data_acc_train)
             data_acc_test=from_metric_data_to_count(test1,test2,test3,data_acc_test)
 
-        #---- Eficacia
+        #---- Efficiency.
         prec_or_eff='eff'
         for i,pack in enumerate(self.all_packs):
 
             pack_path=self.data_path+'/'+pack.replace('pack',self.library)+'/'
 
-            # Obtener los datos de prec/eff por region de este pack
+            # Get the prec/eff data by region for this pack.
             last1,last2,last3=from_df_data_to_graph_data(
                             [pack_path+'learning_regions.csv',pack_path+'df_last_'+prec_or_eff+'.csv'],pack,which_graph='last_'+prec_or_eff,
                             )
@@ -734,7 +734,7 @@ class MainGrapher():
                             test_conf=test_conf
                         )
 
-            # Dibujar distribucion de prec/eff de las tres regiones
+            # Plot the prec/eff distribution for the three regions.
             title=[['Initialization','Learning','Convergence']if i==0 else ['']*3][0]
             main_title=[r'\textbf{Efficiency}' if i==0 else ''][0]
             xlabel=r'$\varepsilon$'
@@ -743,7 +743,7 @@ class MainGrapher():
             plot_pack_criteria_prec_or_eff(axs[i,9],[last2,train2,test2][::-1],title=title[1],last_pack=last_pack,main_title=main_title,xlabel=xlabel)
             plot_pack_criteria_prec_or_eff(axs[i,10],[last3,train3,test3][::-1],title=title[2],last_pack=last_pack)
 
-            # Actualizar datos de interes
+            # Update data of interest.
             data_eff_last=from_metric_data_to_count(last1,last2,last3,data_eff_last)
             data_eff_train=from_metric_data_to_count(train1,train2,train3,data_eff_train)
             data_eff_test=from_metric_data_to_count(test1,test2,test3,data_eff_test)
@@ -753,7 +753,7 @@ class MainGrapher():
                 axs[i,3].axis('off')
                 axs[i,7].axis('off')
 
-        # Guardar base de datos que resume de manera aseptica lo que sucede en la figura enumerando casos
+        # Save the database, that gives a concise summary of what is happening in the figure, listing the cases.
         all_data=[data_deg,data_acc_last,data_acc_train,data_acc_test,
                   data_eff_last,data_eff_train,data_eff_test]
         metric_criteria=[['deg',None],['acc','last'],['acc','train'],['acc','test'],
@@ -783,7 +783,7 @@ class MainGrapher():
  
     def patterns_deg_acc_eff(self):
 
-        # Plotear scatter plot para pack-region
+        # Plot a scatter plot for pack-region.
         def plot_uncertainty_rectangles(ax, lista1, lista2, lista3, lista4,color,pack='',first_row=True,first_column=True,center_row=True):
 
             x_med = np.median(lista1)
@@ -820,13 +820,13 @@ class MainGrapher():
                         ax.set_ylabel(r'$\varepsilon$')
 
         
-        # Cargar datos necesarios
+        # Upload the required data.
         df_conf=pd.read_csv(self.data_path+'/configurations.csv')
         train_conf=str(int(df_conf.loc[df_conf["pack"] == 'all', "train_opt"].iloc[0]))
         conf_str=df_conf.loc[df_conf["pack"] == 'all', "test_cost_freq_opt"].iloc[0]
         test_conf=conf_str.split('_')[0]+'_'+conf_str.split('_')[1]+'cost'
             
-        # Graficas
+        # Graphs.
         fig, axs = plt.subplots(2,len(self.all_packs), figsize=(1.3*len(self.all_packs),1.2*2))
         plt.subplots_adjust(top=0.9,bottom=0.16,left=0.05,right=0.8, hspace=0,wspace=0)
 
@@ -837,12 +837,12 @@ class MainGrapher():
             colors = ["#693106", "#BB8A20", "#bba86a"][::-1]
             pack_path=self.data_path+'/'+pack.replace('pack',self.library)+'/'
 
-            #---- Degradacion
+            #---- Degradation.
             deg1,deg2,deg3=from_df_data_to_graph_data(
                                     [pack_path+'learning_regions.csv',pack_path+'deg_evolution.csv'],pack,'deg_distribution'
                                 ) 
 
-            #---- Precision
+            #---- Accuracy.
             last1,last2,last3=from_df_data_to_graph_data(
                             [pack_path+'learning_regions.csv',pack_path+'df_last_prec.csv'],pack,which_graph='last_prec'
                         )
@@ -859,7 +859,7 @@ class MainGrapher():
             plot_uncertainty_rectangles(axs[0,i],deg2,last2,train2,test2,colors[1],pack,first_column=first_column,center_row=center_row)
             plot_uncertainty_rectangles(axs[0,i],deg3,last3,train3,test3,colors[2],pack,first_column=first_column,center_row=center_row)
             
-            #---- Eficacia
+            #---- Efficiency.
             last1,last2,last3=from_df_data_to_graph_data(
                             [pack_path+'learning_regions.csv',pack_path+'df_last_eff.csv'],pack,which_graph='last_eff',
                         )
@@ -876,10 +876,10 @@ class MainGrapher():
             plot_uncertainty_rectangles(axs[1,i],deg2,last2,train2,test2,colors[1],first_row=False,first_column=first_column,center_row=center_row)
             plot_uncertainty_rectangles(axs[1,i],deg3,last3,train3,test3,colors[2],first_row=False,first_column=first_column,center_row=center_row)
 
-        # Leyenda
+        # Legend.
 
         legend_elements = [
-            # puntos (solo borde)
+            # dots (edge only).
             Line2D([0], [0], marker='o', linestyle='None',
                 markerfacecolor='none', markeredgecolor='black',
                 label=r'\textit{Last}'),
@@ -892,7 +892,7 @@ class MainGrapher():
                 markerfacecolor='none', markeredgecolor='black',
                 label=r'\textit{Validation}'),
 
-            # líneas
+            # lines.
             Line2D([0], [0], color=colors[0], lw=2,
                 label='Initialization'),
 
@@ -906,8 +906,8 @@ class MainGrapher():
         axs[0,6].legend(
             handles=legend_elements,
             loc='upper center',
-            bbox_to_anchor=(2, 1),  # fuera abajo
-            ncol=1,                       # 3 columnas
+            bbox_to_anchor=(2, 1),  # outside, below
+            ncol=1,                       # 3 columns
             frameon=False,
             fontsize=10,
             handlelength=2
@@ -918,7 +918,7 @@ class MainGrapher():
  
     def criteria_comparison(self,comparison_type='how_times_best'):
         '''
-        `comparison_type`: puede ser 'how_times_best', 'in_which_deg_best'
+        `comparison_type`: it can be 'how_times_best', 'in_which_deg_best'.
         '''
 
         df_conf=pd.read_csv(self.data_path+'/configurations.csv')
@@ -934,7 +934,7 @@ class MainGrapher():
 
         legend_groups = [["last", "train"],["last", "test"],["train", "test"]]
 
-        # Funcion para guardar datos de interes
+        # Function for saving relevant data.
         if comparison_type=='how_times_best':
             last_train,last_test,train_test=[[0,0,0] for _ in range(3)],[[0,0,0] for _ in range(3)],[[0,0,0] for _ in range(3)]
         if comparison_type=='in_which_deg_best':
@@ -999,18 +999,18 @@ class MainGrapher():
 
             return last_train,last_test,train_test
 
-        # Funciones para plotear datos por pack-region
+        # Functions for plotting data by pack-region.
         def plot_how_many_times_better(axs, data, pack_name='', title='', not_last_pack=True):
 
             color_marker_map = {'green': 's','orange': '^','blue': 'o'}
             colors = [['blue', 'orange'],['blue', 'green'],['orange', 'green']]
 
-            # recorrer cada región → cada ax
+            # Go through each region → each axis.
             for i, (ax, (pair, (color_left, color_right))) in enumerate(zip(axs, zip(data, colors))):
 
                 left_val, right_val = pair
 
-                # barras enfrentadas
+                # Opposing bars.
                 ax.barh(
                     y=0,
                     width=left_val,
@@ -1030,7 +1030,7 @@ class MainGrapher():
                 for x in [0.25, 0.5, 0.75]:
                     ax.axvline(x, color='black', linestyle='--', linewidth=0.5)
 
-                # marcadores extremos
+                # Extreme markers.
                 marker_left = color_marker_map.get(color_left, 'o')
                 marker_right = color_marker_map.get(color_right, 'o')
 
@@ -1040,27 +1040,23 @@ class MainGrapher():
                 if right_val > 0:
                     ax.plot(1, 0, marker=marker_right, color=color_right, markersize=5,markeredgecolor='black')
 
-                # estética por ax
+                # Aesthetics by ax.
                 ax.set_xlim(-0.05, 1.05)
                 ax.set_ylim(-0.5, 0.5)
                 ax.set_yticks([])
                 ax.set_ylabel(abbreviate(pack_name), rotation=0, labelpad=20)
                 ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
                 ax.set_xticklabels(['0', '0.25', '0.5', '0.75', '1'])
-                
-
-                #if not_last_pack:
                 ax.set_xticks([])
 
             axs[0].set_title(title)
-            # leyenda solo en último
+            # Legend only on the last.
             if not not_last_pack and pack_name != '':
                 for i in range(3):
                         handles = [legend_map[k] for k in legend_groups[i]]
                         axs[i].legend(handles=handles,loc='upper center',bbox_to_anchor=(1.5, 0.7),ncol=len(handles),frameon=False,fontsize=11,handletextpad=0.4)
                         
-
-            # etiqueta global (opcional)
+            # Global label (optional).
             for i in range(3):
                 axs[i].set_ylabel(abbreviate(pack_name),rotation=0, labelpad=20, fontsize=8)
                 axs[i].yaxis.set_label_coords(-0.15, 0.1)
@@ -1073,12 +1069,12 @@ class MainGrapher():
             bins = 10
             hist_height = 0.4
 
-            # recorrer 3 regiones → 3 axes
+            # Cross 3 regions → 3 axes.
             for i, (ax, pair, pair_colors) in enumerate(zip(axs, data, colors)):
 
                 bar_height = hist_height / len(pair_colors)
 
-                # NUEVO: calcular histogramas PRIMERO (sin normalizar)
+                # calculate histograms first (unnormalised).
                 hist_list = []
                 for sublist in pair:
                     sublist = np.asarray(sublist)
@@ -1087,17 +1083,17 @@ class MainGrapher():
                     )
                     hist_list.append(hist)
 
-                # NUEVO: normalización conjunta dentro del pair
+                # Joint normalisation within the pair.
                 pair_max = max([h.max() if len(h) > 0 else 0 for h in hist_list])
                 pair_max = pair_max if pair_max > 0 else 1
                 norm_hist_list = [h / pair_max for h in hist_list]
                 bin_width = bin_edges[1] - bin_edges[0]
 
 
-                # Grafica
+                # Graph.
                 for j, (hist, color) in enumerate(zip(norm_hist_list, pair_colors)):
 
-                    # degradado consistente entre las dos sublistas del pair
+                    # A consistent colour degradation between the two sub-lists in the pair.
                     base_rgb = np.array(mcolors.to_rgb(color))
                     colors_scaled = [tuple(base_rgb * p + (1 - p)) for p in hist]
                     bottom = j * bar_height
@@ -1113,7 +1109,7 @@ class MainGrapher():
                             edgecolor=None
                         )
 
-                    # mediana
+                    # Median.
                     if len(pair[j]) > 0:
                         median_val = np.median(pair[j])
                         mid_y = bottom + bar_height / 2
@@ -1127,7 +1123,7 @@ class MainGrapher():
                             markersize=3
                         )
 
-                # estética por ax
+                # Aesthetics by ax.
                 ax.set_xlim(-0.05, 1.05)
                 ax.set_yticks([])
                 ax.set_title(title,fontsize=14)
@@ -1142,7 +1138,7 @@ class MainGrapher():
                 else:
                     ax.set_xlabel(xlabel,fontsize=14)
 
-            # leyenda
+            # Legend.
             if not_last_pack:
                 for ax in axs:
                     ax.set_xticklabels([])
@@ -1159,13 +1155,12 @@ class MainGrapher():
                             fontsize=14
                         )
 
-        # Graficas
+        # Graphs.
         if comparison_type=='how_times_best':
-            # NOTE: para sugerencia de Etor sustituit los [2] por [0.5]
             fig, axs = plt.subplots(len(self.all_packs)*3+2,3, figsize=(5,4.8*0.1*len(self.all_packs)),
                                         gridspec_kw={'height_ratios': [1]*len(self.all_packs)+[2]+[1]*len(self.all_packs)+[2]+[1]*len(self.all_packs)})
             plt.subplots_adjust(top=0.92,bottom=0.05,left=0.1,right=0.98, hspace=0,wspace=0.0)
-            #plt.subplots_adjust(top=0.92,bottom=0.1,left=0.1,right=0.98, hspace=0.0,wspace=0.0) # NOTE: para sugerencia de Etor descomentar
+  
         else:
             fig, axs = plt.subplots(len(self.all_packs),3*3+2, figsize=(5*3,0.6*len(self.all_packs)),
                                         gridspec_kw={'width_ratios': [1,1,1,0.35,1,1,1,0.35,1,1,1]})
@@ -1181,17 +1176,17 @@ class MainGrapher():
             
             if comparison_type=='how_times_best':
 
-                # Obtener los datos de la medida de comapracion por region de este pack            
+                # Get the comparative measurement data by region for this pack.         
                 matrix1,matrix2,matrix3,_,_,_=from_df_data_to_graph_data(
                                         [pack_path+'learning_regions.csv',pack_path+'df_last_truth.csv',
                                         pack_path+'df_train_truth.csv',pack_path+'df_test_truth.csv'],
                                         pack,which_graph=comparison_type,train_conf=train_conf,test_conf=test_conf)
-                # Dibujar distribucion de la medida de comparacion de las tres regiones
+                # Plot the distribution of the comparison measure for the three regions.
                 plot_how_many_times_better([axs[i,0],axs[p+i+1,0],axs[p*2+i+2,0]],matrix1,pack_name=pack.replace('pack_PPO_',''),title=title[0],not_last_pack=not_last_pack)
                 plot_how_many_times_better([axs[i,1],axs[p+i+1,1],axs[p*2+i+2,1]],matrix2,title=title[1],not_last_pack=not_last_pack)
                 plot_how_many_times_better([axs[i,2],axs[p+i+1,2],axs[p*2+i+2,2]],matrix3,title=title[2],not_last_pack=not_last_pack)
 
-                # Datos de interes
+                # Data of interest.
                 last_train,last_test,train_test=from_data_times_to_mean_perc(matrix1,matrix2,matrix3,last_train,last_test,train_test)
 
 
@@ -1207,7 +1202,7 @@ class MainGrapher():
                 plot_in_which_deg_best([axs[i,1],axs[i,5],axs[i,9]],matrix2,title=title[1],not_last_pack=not_last_pack,xlabel=xlabel)
                 plot_in_which_deg_best([axs[i,2],axs[i,6],axs[i,10]],matrix3,title=title[2],not_last_pack=not_last_pack)
 
-                #Datos de interes
+                # Data of interest.
                 last_train,last_test,train_test=from_data_conditioned_deg_to_perc(matrix1,matrix2,matrix3,last_train,last_test,train_test)
 
             if not comparison_type=='how_times_best':
@@ -1219,7 +1214,7 @@ class MainGrapher():
                     axs[p,i].axis('off')
                     axs[p*2+1,i].axis('off')
 
-        # Guardar en df datos de interes que resumen de manera aseptica los numeros de casos de interes que se dan en la figura
+        # Save in df the relevant data that objectively summarises the numbers of cases shown in the figure.
         if comparison_type=='how_times_best':        
             df = pd.DataFrame(columns=['case', 'mean_perc_init', 'mean_perc_learn','mean_perc_conv','mean_perc_all'])
             
@@ -1306,12 +1301,11 @@ class AppendixGrapher:
 
         def plot_analysis_per_seed(ax,truth,cols_test,cols_train,first_row,last_row,first_column,center_row=False,center_column=False):
 
-            # Estimates with validation
+            # Estimates with validation.
             greens = plt.cm.Greens(np.linspace(0.3, 0.9, len(cols_test.columns)))
             oranges = plt.cm.Oranges(np.linspace(0.3, 0.9, len(cols_train.columns)))
 
-            # Ground truth
-            #ax.plot(range(len(truth)),np.array(truth)-np.array(truth), color='black', label='truth')
+            # Ground truth.
 
             for col, color in zip(cols_test.columns[::-1], greens):
                 ax.plot(range(len(truth)), abs(np.array(cols_test[col].values)-np.array(truth)), color=color, label=col.split('_')[0]+r' \textit{validation}',linewidth=1)
@@ -1394,21 +1388,16 @@ class AppendixGrapher:
             df_est_ord.to_csv(self.data_path+'/paper/df_estimations_ordering.csv', index=False)
             df_est_ord.to_latex(self.data_path+'/paper/df_estimations_ordering.tex', index=False)
 
-
-
-
     def estimations_selected_conf(self):
 
 
         def plot_analysis_per_seed(ax,truth,test,train,first_row,last_row,first_column,center_row):
 
-
-            # Ground truth
+            # Ground truth.
             ax.plot(range(len(train)),np.array(test), color='green', label=r'\textit{validation}',linewidth=2,alpha=0.8)
             ax.plot(range(len(truth)),np.array(truth), color='black', label='truth',linewidth=1)
             ax.plot(range(len(train)),np.array(train), color='orange', label=r'\textit{train}',linewidth=1)
             
-
             ax.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
             offset = ax.yaxis.get_offset_text()
             offset.set_x(0)
@@ -1447,7 +1436,7 @@ class AppendixGrapher:
         fig, axs = plt.subplots(n_seeds,len(self.all_packs), figsize=(2.5*len(self.all_packs),1.2*n_seeds),sharex='col',sharey='col')
         plt.subplots_adjust(top=0.95,bottom=0.15,left=0.05,right=0.98, hspace=0.1,wspace=0.2)
 
-        # Leer configuraciones generales optimas para poder las marcar en las graficas
+        # Read optimal general configurations to plot them on the graphs.
         df_conf=pd.read_csv(self.data_path+'/configurations.csv')
 
 
@@ -1485,7 +1474,7 @@ class AppendixGrapher:
         def graph_deg_criteria_conf_by_regions(self,ax1_train,ax2_train,ax3_train,ax1_test,ax2_test,ax3_test,
                                                pack,first_column,prec_metric='relative_perc_criteria_best'):
 
-            # Leer configuraciones generales optimas para poder las marcar en las graficas
+            # Read optimal general configurations to plot them on the graphs.
             df_conf=pd.read_csv(self.data_path+'/configurations.csv')
             general_train_n_ep=df_conf.loc[df_conf["pack"] == 'all', "train_opt"].iloc[0]
             conf_str=df_conf.loc[df_conf["pack"] == 'all', "test_cost_freq_opt"].iloc[0]
@@ -1493,7 +1482,7 @@ class AppendixGrapher:
             general_test_freq=float(conf_str.split('_')[1])
             default_train_n_ep=int(df_conf.loc[df_conf["pack"] == pack, "train_default"].iloc[0])
 
-            #----- Cuadricula de grafica interna
+            #----- Internal graphic grid.
 
             prec1_simple,prec2_simple,prec3_simple=[],[],[]
 
@@ -1552,7 +1541,7 @@ class AppendixGrapher:
             # 2) Test conf_prec_cost
             def test_conf_precCI_costColor(ax,prec_matrix,cost_matrix,n_ep_list,freq_list,nombres=None,optimal_conf=[None,None]):
 
-                # Grafica
+                # Graph.
                 current_height = 0
                 segment_labels = []
                 region_centers = []
@@ -1580,7 +1569,7 @@ class AppendixGrapher:
                     region_end = current_height - 1
                     region_centers.append((region_start + region_end)/2)
                     
-                    if i < len(n_ep_list)-1: # Linea separadora de regiones
+                    if i < len(n_ep_list)-1: # Region separator line.
                         ax.axhline(current_height-0.5, color='black', linewidth=1)
                 ax.grid(axis='x', linestyle='--', alpha=0.5)
                 ax.set_yticks(range(len(segment_labels)), segment_labels)
@@ -1686,7 +1675,7 @@ class AppendixGrapher:
         list_cost=[0.05,0.1,0.15,0.2]
         colors=plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-        # GRAFICA 1: evolucion de ratio de coste
+        # FIGURE 1: Trend in the cost ratio.
 
         def plot_cost_curve_with_CI(ax,df,color,cost,first_column,last_row):
             ax.plot(np.arange(len(df)), df.quantile(0.5, axis=1), color=color,linewidth=1)
@@ -1710,7 +1699,7 @@ class AppendixGrapher:
             cmap = ListedColormap(["white", "red"])
             ax.imshow(img,aspect='auto',cmap=cmap,interpolation='nearest')
 
-            # limpieza visual
+            # Visual clarity.
             ax.set_yticks([])
             ax.set_xticks([])
             for spine in ax.spines.values():
@@ -1722,7 +1711,7 @@ class AppendixGrapher:
 
         _, ncols = axs.shape
         for row in [1, 4, 7, 10]:
-            ref_ax = axs[row, 0]  # eje referencia de la fila
+            ref_ax = axs[row, 0]  # reference axis of the row.
 
             for col in range(1, ncols):
                 axs[row, col].sharey(ref_ax)
@@ -1736,18 +1725,18 @@ class AppendixGrapher:
                 last_row=[True if j==len(list_cost)-1 else False][0]
                 up_to_cost=[0]*df_costs.shape[0]
 
-                # Primero dibujar curvas de evolucion de coste
+                # First, plot the cost evolution curves.
                 for k,n_ep in enumerate(list_n_ep):
 
                     df_current=df_costs[[c for c in df_costs.columns if f"_{n_ep}_{cost}cost_" in c]]
 
-                    # Dibujar curva
+                    # Draw curve.
                     plot_cost_curve_with_CI(axs[2*j+1+j,i],df_current,colors[k],cost,first_column,last_row)
-                    # Mirar en que iteraciones de la secuencia nos hemos pasado del umbral de coste
+                    # Check at which iterations of the sequence we have exceeded the cost threshold.
                     mask = (df_current > cost).any(axis=1)
                     up_to_cost = np.array(up_to_cost)+ np.array(mask.astype(int).tolist())
 
-                # Despues dibujar sobre esta la grafica auxiliar que indica dodnde nos hemos pasado
+                # Then draw the auxiliary graph on top of this to show where we have exceeded the limit.
                 plot_iters_upper_cost_threshold(axs[2*j+j,i],up_to_cost)
 
             axs[0,i].set_title(abbreviate(pack.replace('pack_PPO_','')),fontsize=14)
@@ -1756,14 +1745,14 @@ class AppendixGrapher:
             for j in range(7):
                 axs[i,j].axis('off')
 
-        # Leyenda
+        # Legend.
         legend_elements = []
 
         # lineas de colores
         for c, n in zip(colors[:len(list_n_ep)], [ r'$\kappa$='+str(i) for i in list_n_ep]):
             legend_elements.append(Line2D([0], [0], color=c, lw=2, label=str(n)))
 
-        # linea roja extra
+        # Coloured lines.
         legend_elements.append(Line2D([0], [0], color='red', lw=2, label=r'$\varphi_c$ is surpassed'))
         axs[len(list_cost)*2+len(list_cost)-2,0].legend(handles=legend_elements,
             loc='upper center',bbox_to_anchor=(4, -0.55),ncol=len(legend_elements), frameon=False)
@@ -1771,7 +1760,7 @@ class AppendixGrapher:
         plt.savefig(self.figure_path+'/appendix/cost_of_cost_driven_test.pdf')
 
 
-        #GRAFICA 2: boxplot de ratio de costes por umbral-setup
+        # FIGURE 2: Boxplot of cost ratios by threshold-setup.
 
         def plot_cost_boxplots_per_pack(ax,data,list_costs,pack,first_column):
 
@@ -1808,22 +1797,22 @@ class AppendixGrapher:
             all_ratios_per_cost=[]
             for j,cost in enumerate(list_cost):
 
-                # Guardar todos los ratios de coste para despues dibujar boxplot
+                # Save all the cost ratios so that a boxplot can be drawn later.
                 all_ratios=[]
                 for k,n_ep in enumerate(list_n_ep):
                     df_current=df_costs[[c for c in df_costs.columns if f"_{n_ep}_{cost}cost_" in c]]
                     all_ratios+=df_current.values.ravel().tolist()
 
-                # Ratios por coste
+                # Ratios per cost.
                 all_ratios_per_cost.append([1 if ratio > 1 else ratio for ratio in all_ratios])
 
-            # Dibujar grafica de boxplots por del pack actual
+            # Plot boxplots considering the current pack.
             plot_cost_boxplots_per_pack(axs[i],all_ratios_per_cost,list_cost,pack,first_column)
 
         plt.savefig(self.figure_path+'/appendix/cost_of_cost_driven_test_boxplots.png')
         plt.savefig(self.figure_path+'/appendix/cost_of_cost_driven_test_boxplots.pdf')
 
-        # GRAFICA 3: boxplot por pack-umbral-n_ep junto a IQR-median de prec
+        # FIGURE 3: Boxplot by pack-threshold-n_ep alongside the IQR and median of prec.
 
         def plot_cost_boxplots_per_pack_threshold(ax,data,prec_stats,list_n_ep,pack,cost,first_column,first_row,last_row):
 
@@ -1871,7 +1860,7 @@ class AppendixGrapher:
                 first_row=[True if j==0 else False][0]
                 last_row=[True if j==len(list_cost)-1 else False][0]
 
-                # Guardar todos los ratios de coste para despues dibujar boxplot
+                # Save all the cost ratios so that a boxplot can be drawn later.
                 all_ratios=[]
                 all_precs=[]
                 for k,n_ep in enumerate(list_n_ep):
@@ -1883,14 +1872,14 @@ class AppendixGrapher:
                     all_precs.append([np.percentile(list_prec,25),np.median(list_prec),np.percentile(list_prec,75)])
 
 
-                # Dibujar grafica de boxplots por del pack-threshold actual
+                # Plot boxplots based on the current pack-threshold.
                 plot_cost_boxplots_per_pack_threshold(axs[j,i],all_ratios,all_precs,list_n_ep,pack,cost,first_column,first_row,last_row)
 
         plt.savefig(self.figure_path+'/appendix/cost_of_cost_driven_test_boxplots_pack_cost.png')
         plt.savefig(self.figure_path+'/appendix/cost_of_cost_driven_test_boxplots_pack_cost.pdf')
 
 
-        # GRFACICA 4: boxplot por pack-periodo-n_ep junto a IQR-median de prec para default test criterion
+        # FIGURE 4: Box plot by pack-period-n_ep, alongside the IQR and median of prec for the default test criterion.
         def plot_cost_boxplots_per_pack_freq(ax,data,prec_stats,list_n_ep,pack,freq,first_column,first_row,last_row):
 
             ax.axhspan(0, 0.2,color='green',alpha=0.2)
@@ -1938,7 +1927,7 @@ class AppendixGrapher:
                 first_row=[True if j==0 else False][0]
                 last_row=[True if j==len(list_freq)-1 else False][0]
 
-                # Guardar todos los ratios de coste para despues dibujar boxplot
+                # Save all the cost ratios so that a boxplot can be drawn later.
                 all_ratios=[]
                 all_precs=[]
                 for k,n_ep in enumerate(list_n_ep):
@@ -1950,7 +1939,7 @@ class AppendixGrapher:
                     all_precs.append([np.percentile(list_prec,25),np.median(list_prec),np.percentile(list_prec,75)])
 
 
-                # Dibujar grafica de boxplots por del pack-threshold actual
+                # Plot boxplots based on the current pack-threshold.
                 plot_cost_boxplots_per_pack_freq(axs[j,i],all_ratios,all_precs,list_n_ep,pack,freq,first_column,first_row,last_row)
 
         plt.savefig(self.figure_path+'/appendix/cost_of_cost_driven_test_boxplots_pack_freq.png')
@@ -1958,7 +1947,7 @@ class AppendixGrapher:
 
     def val_cost_throughout_sequence(self):
 
-        # Escala de colores
+        # Colour scale.
         cmap_gwr = LinearSegmentedColormap.from_list('green_white_red',
             [(0.0, 'darkgreen'),(0.3, 'white'),(1.0, 'darkred')])
 
@@ -1972,11 +1961,11 @@ class AppendixGrapher:
                     return np.array([1]*len(x))
                 return (x - x.min()) / (x.max() - x.min())
 
-            # Normalizar truth y ep_lens
+            # Normalise truth and ep_lens.
             list1_norm = normalize(list1)
             list2_norm = normalize(list2)
 
-            # Grafica
+            # Graph.
             #--- truth
             ax1.imshow(list1_norm[np.newaxis, :],cmap='gray_r',aspect='auto',interpolation='nearest',vmin=0,vmax=1)
             ax1.set_ylabel(r'$f(\pi_t)$', rotation=0,fontsize=8)
@@ -1991,14 +1980,14 @@ class AppendixGrapher:
             for i, col in enumerate(df.columns):
                 values = np.array(df[col].values, dtype=float)
 
-                # limitar valores >1 a 1 para el color
+                # Limit values greater than 1 to 1 for the colour.
                 values_clip = np.clip(values, 0, 1)
                 
                 axs_cost[i].imshow(values_clip[np.newaxis, :],cmap=cmap_gwr,norm=norm_gwr,aspect='auto',interpolation='nearest')
                 axs_cost[i].set_ylabel(rf'${{{col.split("_")[0]}}}$', rotation=0,fontsize=8)
                 axs_cost[i].yaxis.set_label_coords(-0.05, 0)
 
-            # Limpieza visual
+            # Visual clarity.
             all_axs=[ax1,ax2]+list(axs_cost)
             for ax in all_axs:
                 ax.set_yticks([])
@@ -2039,25 +2028,25 @@ class AppendixGrapher:
         for i in [8,17,26,35,44,53]:
             axs[i].axis('off')
 
-        # Leyenda
+        # Legend.
         sm = plt.cm.ScalarMappable(cmap=cmap_gwr, norm=norm_gwr)
         sm.set_array([])
         cmap_bw = LinearSegmentedColormap.from_list("white_black", ["white", "black"])
         sm2 = plt.cm.ScalarMappable(cmap=cmap_bw, norm=plt.Normalize(0, 1))
         sm2.set_array([])
 
-        # posición base (ajústalo si quieres subir/bajar todo)
+        # Base position (adjust this to raise or lower everything).
         y = 0.06
         h = 0.01
         w = 0.35
 
-        # izquierda
+        # Left.
         cax1 = fig.add_axes([0.08+0.05, y, w, h])
         cbar1 = fig.colorbar(sm, cax=cax1, orientation='horizontal')
         cbar1.set_label('Validation-to-learning iter. cost ratio', fontsize=10)
         cbar1.ax.tick_params(labelsize=8)
 
-        # derecha
+        # Right.
         cax2 = fig.add_axes([0.54+0.05, y, w, h])
         cbar2 = fig.colorbar(sm2, cax=cax2, orientation='horizontal')
         cbar2.set_label(r'Normalized $f(\pi_t)$ or mean $|\tau|$', fontsize=10)
@@ -2092,31 +2081,29 @@ class AppendixGrapher:
         for i,pack in enumerate(self.all_packs):
             last_row=[True if i==len(self.all_packs)-1 else False][0]
 
-            # Columnas de la base de datos de interes
+            # Columns of interest in the database.
             df_n_ep=pd.read_csv(self.data_path+'/'+pack.replace('pack','SB3')+'/df_test_n_ep.csv')
             df_current=df_n_ep[[c for c in df_n_ep.columns if f"_{n_ep}_{cost}cost_" in c]]
 
-            # Dibujar grafica por pack de las 30 semillas
-            
+            # Draw a graph for each pack of 30 seeds.            
             plot_val_freq_evolution(axs[i],df_current,pack,last_row)
-
 
         plt.savefig(self.figure_path+'/appendix/val_freq_throughout_sequence.pdf')
 
     def test_default_vs_with_cost(self):
 
-        # Configuracion de test with cost
+        # Configuration of test with cost.
         df_conf=pd.read_csv(self.data_path+'/configurations.csv')
         conf_str=df_conf.loc[df_conf["pack"] == 'all', "test_cost_freq_opt"].iloc[0]
         test_conf=conf_str.split('_')[0]+'_'+conf_str.split('_')[1]+'cost'
 
-        # Funciones
+        # Functions.
         def plot_pack_costs_accs(ax,cost_list,pack_name='',ytitle='',title='',not_last_pack=True,first_pack=False,first_column=True):
  
-            # Nube de puntos
+            # Point cloud.
             sns.stripplot(x=cost_list, orient='h', jitter=0.4,ax=ax,color='black',zorder=1,size=1)
 
-            # Linea de la mediana
+            # Median line.
             ax.axvline(np.median(cost_list), color='red',linewidth=2,zorder=2)
             ax.axvspan(np.quantile(cost_list,0.25), np.quantile(cost_list,0.75), color='red', alpha=0.5,zorder=2)
 
@@ -2157,7 +2144,7 @@ class AppendixGrapher:
                 ax.set_title('Proportion of\nvalidations',fontsize=12)
             ax.set_yticks([]) 
                 
-        # Grafica
+        # Graph.
         fig, axs = plt.subplots(len(self.all_packs)*2+1,5, figsize=(3*2,0.4*len(self.all_packs)),
                                     gridspec_kw={'width_ratios': [1,0,1,0,1],
                                                  'height_ratios': [1]*len(self.all_packs)+[0.5]+[1]*len(self.all_packs)})
@@ -2168,24 +2155,24 @@ class AppendixGrapher:
         for i,pack in enumerate(self.all_packs):
 
             
-            # Leear bases de datos necesarias
+            # Read the necessary databases.
             df_cost=pd.read_csv(self.data_path+'/'+pack.replace('pack',self.library)+'/df_test_cost.csv')
             df_n_ep=pd.read_csv(self.data_path+'/'+pack.replace('pack',self.library)+'/df_test_n_ep.csv')
             df_acc=pd.read_csv(self.data_path+'/'+pack.replace('pack',self.library)+'/df_test_prec.csv')
 
-            # Listas de costes
+            # List of costs.
             test_default=df_conf.loc[df_conf["pack"] == pack, "test_default"].iloc[0]
             df_default= df_cost.loc[:, df_cost.columns.str.contains('_'+test_default+'_')]
             cost_default = [min(cost, 1) for cost in df_default.values.flatten().tolist()] 
             df_with_cost=df_cost.loc[:, df_cost.columns.str.contains('_'+test_conf+'_')]
             cost_with_cost=[min(cost, 1) for cost in df_with_cost.values.flatten().tolist()] 
 
-            # Listas de numero de validaciones
+            # Lists of validation counts.
             times_default=int(df_n_ep.shape[0]/int(test_default.split('_')[1]))/df_n_ep.shape[0]
             df_with_cost=df_n_ep.loc[:, df_n_ep.columns.str.contains('_'+test_conf+'_')]
             times_with_cost=[i/df_n_ep.shape[0] for i in (df_with_cost != 0).sum().tolist()]
 
-            # Listas de accuracies
+            # Lists accuracies.
             df_default= df_acc.loc[:, df_acc.columns.str.contains('_'+test_default+'_')]
             acc_default=[acc for acc in df_default.values.flatten().tolist()] 
             df_default= df_acc.loc[:, df_acc.columns.str.contains('_'+test_conf+'_')]
@@ -2222,18 +2209,18 @@ class AppendixGrapher:
 
             colors=list(mcolors.TABLEAU_COLORS.keys())
 
-            # Evolucion de degradacion
+            # Evolution of degradation.
             deg=pd.read_csv(self.data_path+'/'+pack.replace('pack','SB3')+'/deg_evolution.csv')[pack+str(seed)+'_'+global_deg_metric+'_'+local_deg_metric].tolist()
             
             ax1.imshow(np.array(deg)[np.newaxis, :], cmap='gray_r', vmin=0, vmax=1,aspect='auto', interpolation='nearest')
             ax1.set_xticks([])
             ax1.set_yticks([])
             
-            # Evolucion de estimaciones truth
+            # Evolution of the ground truth estimates.
             truth_last=pd.read_csv(self.data_path+'/'+pack.replace('pack','SB3')+'/df_last_truth.csv')[pack+str(seed)].tolist()
             ax2.plot(range(len(truth_last)), truth_last, label="Truth",color=colors[0],linewidth=1)
 
-            # Limites a (donde empieza a aprender) y b (donde se termina de aprender)
+            # a (start of learning) and b (strat of convergence) limits.
             df_limits=pd.read_csv(self.data_path+'/'+pack.replace('pack','SB3')+'/learning_regions.csv')
             a,b=df_limits.loc[(df_limits['pack_seed'] == pack + str(seed)),['a', 'b']].iloc[0]
 
@@ -2261,10 +2248,10 @@ class AppendixGrapher:
                                 height_ratios=[0.2,1]*n_seeds)
         plt.subplots_adjust(top=0.95,bottom=0.13,left=0.04,right=0.99, hspace=0.2,wspace=0.2)
 
-        # compartir ejes solo para filas impares
+        # Share axes for odd rows only.
         for col in range(len(self.all_packs)):
             
-            # referencia = primera fila impar
+            # Reference = first odd row.
             ref_ax = axs[1, col]
             
             for row in range(3, n_seeds*2, 2):
@@ -2272,7 +2259,7 @@ class AppendixGrapher:
                 axs[row, col].sharey(ref_ax)
 
         for i,pack in enumerate(self.all_packs):
-            for seed in range(1,n_seeds+1):#TODO: puede que para meter en el paper tenga que reducir el numero de semillas, igual a 5
+            for seed in range(1,n_seeds+1):
                 first_row=[True if seed==1 else False][0]
                 last_row=[True if seed==n_seeds else False][0]
                 first_column=[True if i==0 else False][0]
@@ -2310,7 +2297,7 @@ class AppendixGrapher:
             test_n_ep_default,test_freq_default=int(test_default.split('_')[0]),int(test_default.split('_')[1])
             test_n_ep,test_freq=int(conf_str.split('_')[0]),float(conf_str.split('_')[1])
 
-            # Obtener datos para las graficas
+            # Obtaining data for the graphs.
             matrix_best_est,matrix_best_truth=successive_halving(self.data_path+'/',pack)
             matrix_last_est,matrix_last_truth=successive_halving(self.data_path+'/',pack,criteria='last')
             matrix_train_default_est,matrix_train_default_truth=successive_halving(self.data_path+'/',pack,criteria='train',conf=[train_default,None])
@@ -2318,7 +2305,7 @@ class AppendixGrapher:
             matrix_test_est,matrix_test_truth=successive_halving(self.data_path+'/',pack,criteria='test',conf=[test_n_ep,test_freq])
 
             
-            # Grafica 1: sucessive halving explicito
+            # Figure 1: Explicit successive halving.
             def plot_succesive_halving(ax,matrix_criteria,color):
                 max_long=max([len(i) for i in matrix_criteria])
                 for truth_evol in matrix_criteria:
@@ -2347,20 +2334,20 @@ class AppendixGrapher:
                 axs[0,pack_indx].set_title(abbreviate(pack_name),fontsize=14)
                 axs[4,pack_indx].set_xlabel(r"$t$",fontsize=12)
 
-            # Graficas 2 y 3: info de resource allocation (eff) y evolucion de performnace (prec)
+            # Figures 2 and 3: information on resource allocation (eff) and performance evolution (prec).
             def plot_resource_allocation(ax, listas, colors,center_column=False):
 
                 block_centers = []
 
-                # markers por color (orden fijo)
+                # Markers per color (fixed order).
                 marker_map = {'blue': 'o','orange': '^','green': 's','purple': 'D'}
 
-                # 1. rango global
+                # 1. global range.
                 all_data = [x for lista in listas for sub in lista for x in sub]
                 min_val = min(all_data)
                 max_val = max(all_data)
 
-                # bins no uniformes
+                # No uniform bins.
                 bins = np.array([min_val,min_val + 0.25 * (max_val - min_val),min_val + 0.75 * (max_val - min_val),max_val])
 
                 n_groups = len(listas)
@@ -2368,7 +2355,7 @@ class AppendixGrapher:
                 spacing = bar_height * 1.15
                 outer_margin = (max_val - min_val) * 0.08
 
-                # 2. histogramas
+                # 2. histograms.
                 histogramas = []
                 for lista_de_listas in listas:
                     datos = [x for sub in lista_de_listas for x in sub]
@@ -2376,7 +2363,7 @@ class AppendixGrapher:
                     perc = counts / len(datos)
                     histogramas.append(perc)
 
-                # 3. dibujar
+                # 3. draw.
                 for b in range(len(bins) - 1):
 
                     y_center = (bins[b] + bins[b+1]) / 2
@@ -2393,7 +2380,7 @@ class AppendixGrapher:
                         if color in marker_map and color != 'black':
                             ax.scatter(counts[b],y,marker=marker_map[color],color=colors[i],edgecolor='black',zorder=5,s=30)
 
-                # líneas separadoras entre bloques
+                # Separator lines between blocks.
                 for i in range(len(block_centers) - 1):
 
                     y_sep = (block_centers[i] + block_centers[i+1]) / 2
@@ -2405,7 +2392,7 @@ class AppendixGrapher:
                         zorder=10
                     )
 
-                # 4. estetica
+                # 4. aesthetic.
                 ax.set_ylim(min_val - outer_margin, max_val + outer_margin)  
                 ax.set_xlim(0, max(max(h) for h in histogramas) * 1.1)
 
@@ -2415,7 +2402,7 @@ class AppendixGrapher:
                 if center_column:
                     ax.set_xlabel('Proportion of evaluations',fontsize=12)
 
-                # para que los numeros del eje x no se superpongan
+                # To prevent overlapping of the numbers on the x-axis.
                 step = 100
 
                 xmin, xmax = ax.get_xlim()
@@ -2467,7 +2454,7 @@ class AppendixGrapher:
                 max_long=max([len(i) for i in matrix_truth])
                 current_min=[]
                 for i in range(max_long):
-                    # Minimo global para normalizar despues
+                    # Global minimum to normalise afterwards.
                     current_truht_mins,current_criteria_mins=[],[]
                     for sub_truth,sub_criteria in zip(matrix_truth,matrix_criteria):
                         current_truht_mins.append(min(sub_truth[:i+1]))
@@ -2598,7 +2585,7 @@ class AppendixGrapher:
                 max_long=max([len(i) for i in matrix_truth])
                 current_min=[]
                 for i in range(max_long):
-                    # Minimo global para normalizar despues
+                    # Global minimum to normalise afterwards.
                     current_truht_mins,current_criteria_mins=[],[]
                     for sub_truth,sub_criteria in zip(matrix_truth,matrix_criteria):
                         current_truht_mins.append(min(sub_truth[:i+1]))
@@ -2609,22 +2596,22 @@ class AppendixGrapher:
 
         def resource_allocation(listas):
 
-            # 1. rango global
+            # 1. global range.
             all_data = [x for lista in listas for sub in lista for x in sub]
             min_val = min(all_data)
             max_val = max(all_data)
 
-            # bins no uniformes
+            # No uniform bins.
             bins = np.array([min_val,min_val + 0.25 * (max_val - min_val),min_val + 0.75 * (max_val - min_val),max_val])
 
-            # 2. histogramas
+            # 2. histograms.
             histogramas = []
             for lista_de_listas in listas:
                 datos = [x for sub in lista_de_listas for x in sub]
                 counts, _ = np.histogram(datos, bins=bins)
                 histogramas.append(counts)
 
-            # 3. obtener diferencias de histogramas
+            # 3. obtain differences of the histograms.
             low1= histogramas[1][0]/(histogramas[1][0]+histogramas[1][1]+histogramas[1][2])
             middle1= histogramas[1][1]/(histogramas[1][0]+histogramas[1][1]+histogramas[1][2])
             high1= histogramas[1][2]/(histogramas[1][0]+histogramas[1][1]+histogramas[1][2])
@@ -2647,13 +2634,13 @@ class AppendixGrapher:
 
         for i,pack in enumerate(self.all_packs):
 
-            # Almacenar datos
+            # Collect data.
             acc_p25,acc_median,acc_p75=[],[],[]
             acc_all=[]
             ra_low,ra_middle,ra_high=[],[],[]
             for test_freq in list_test_freq:
 
-                # Obtener evolucion de accuracy
+                # Obtain evolution of the accuracy.
                 matrix_best_est,matrix_best_truth=successive_halving(self.data_path+'/',pack)
                 matrix_test_est,matrix_test_truth=successive_halving(self.data_path+'/',pack,criteria='test',conf=[test_n_ep,test_freq])
 
@@ -2668,14 +2655,14 @@ class AppendixGrapher:
                 acc_all.append(acc_evol)
 
 
-                # Obtener resource allocation
+                # Obtain resource allocation.
                 diff_list=resource_allocation([matrix_best_truth,matrix_test_truth])
 
                 ra_low.append(diff_list[0])
                 ra_middle.append(diff_list[1])
                 ra_high.append(diff_list[2])
 
-            # Dibujar graficas por entorno
+            # Draw graphs per environment.
             def plot_eff(ax,x,y1,y2,y3,pack,first_pack=False):
                 ax.plot(x, y1, color="#e65858", label='low',marker=7,linewidth=1.5)
                 ax.plot(x, y2, color="#815513", label='middle',linewidth=1.5)
@@ -2694,7 +2681,7 @@ class AppendixGrapher:
 
                 for x_i, data in zip(x, listas):
 
-                    # puntos individuales
+                    # Individual points.
                     jitter = np.random.uniform(-0.015, 0.015, len(data))
                     ax.scatter(
                         np.full(len(data), x_i) + jitter,
@@ -2704,12 +2691,12 @@ class AppendixGrapher:
                         zorder=5
                     )
 
-                    # estadísticos
+                    # Statistics.
                     p25 = np.percentile(data, 25)
                     med = np.median(data)
                     p75 = np.percentile(data, 75)
 
-                    # banda IQR
+                    # IQR band.
                     ax.fill_between(
                         [x_i - 0.015, x_i + 0.015],
                         [p25, p25],
@@ -2719,7 +2706,7 @@ class AppendixGrapher:
                         zorder=2
                     )
 
-                    # mediana
+                    # Median.
                     ax.hlines(
                         med,
                         x_i - 0.015,
@@ -2728,9 +2715,6 @@ class AppendixGrapher:
                         linewidth=2,
                         zorder=6
                     )
-
-
-
 
                 ax.set_ylim(-0.1,1.1)
                 ax.set_yticks([0, 0.25, 0.5, 0.75, 1])
@@ -2748,12 +2732,12 @@ class AppendixGrapher:
 
             first_pack=[True if i==0 else False][0]
             middle_pack=[True if i==len(self.all_packs)//2 else False][0]
-            #---- curvas eff: ox=list_test_freq, oy=ra_low,ra_middle,ra_high
+            #---- eff curves: ox=list_test_freq, oy=ra_low,ra_middle,ra_high
             plot_eff(axs[0,i],list_test_freq,ra_low,ra_middle,ra_high,pack,first_pack=first_pack)
-            #---- curvas con CI acc: ox=list_test_freq, oy=[acc_p25,acc_median,acc_p75]
+            #---- curves with CI acc: ox=list_test_freq, oy=[acc_p25,acc_median,acc_p75]
             plot_acc(axs[1,i],list_test_freq,acc_all,first_pack=first_pack,middle_pack=middle_pack)
 
-        # Leyenda
+        # Legend.
         legend_elements = [
             Line2D([0], [0], marker=6, color='#3cb371',
                 markerfacecolor='#3cb371', markersize=10,lw=2,

@@ -112,10 +112,14 @@ class ModifiedFunctions_Common:
     '''
     Changes to the `EvalCallback._on_step` default function have been added. This function defines the validation interaction. 
     It has been modified to allow for the storage of validation data (both data associated with validation-based criteria and ground truth data).
+    Additionally, it stores data associated with the iterative learning process, taking into account the selection criterion set at the start of 
+    the learning process in order to track the best policy.
+    The changes made allow the necessary data to be stored when applying `last`, `validation`, and `cost_driven_validation`. The data for `train` 
+    is partially populated in this function, and is fully populated following the changes made to the `dump_logs` function.
+
     Changes made are highlighted with a comment such as: # MODIFICATION.
     '''
-    # Las modificaciones aplicadas permiten almacenar los datos necesarios al aplicar last, validation y cost-driven validation.
-    # Los datos para train se completan parcialmente en este funcion, y terminan de completarse con las modificaciones de la funcion dump_logs
+
     def _on_step(self) -> bool:
 
         # MODIFICATION ############################################################################
@@ -324,11 +328,7 @@ class ModifiedFunctions_Common:
 
 
             # MODIFICATION: First, validate to obtain the ground truth data.
-            np_state = np.random.get_state()#Esto de aqui es para guardar el estado de aleatoriedad de numpy, ya que cuando criterion='validation'
-                                            #se hacen dos llamadas a my_evaluate_policy, y el estado como cambia, despues los minibatches se escogen 
-                                            #diferente para la actualizacion de la politica aunque sea el mismo rollout y se genera una secuencia de
-                                            #politicas diferente. Nosotros queremos generar la misma secuencia para el mismo metodo-entorno-semilla,
-                                            #aunque el criterio sea diferente
+            np_state = np.random.get_state() # NOTE: This is to preserve the randomness state in NumPy, as when criterion is “validation”, two calls are made to my_evaluate_policy, and as the state changes, the minibatches are subsequently selected differently for the policy update – even if the rollout is the same – resulting in a different sequence of policies. We want to generate the same sequence for the same method-environment-seed combination, even if the criterion is different.
             make_eval_for_test=False
             episode_rewards_truth, episode_lengths_truth, episode_inits_truth, num_episodes_truth, times_per_episode_truth = my_evaluate_policy( # MODIFICATION.
                 self.model,
@@ -387,7 +387,7 @@ class ModifiedFunctions_Common:
 
             with open(join(process_dir, "df_process_"+criterion+'_'+criterion_conf+".csv"), 'a',newline='') as df_process:
 
-                # Para saber cual es la mejor politica real
+                # To know what the best current policy is.
                 if last_truth_reward>best_reward:
                     best_reward=last_truth_reward
                     best_policy=n_policy
@@ -415,13 +415,13 @@ class ModifiedFunctions_Common:
 
                     if cost_driven_validation_done:
 
-                        # Actualizacion de la mejor politica
+                        # Update of the best visited policy by selection criterion.
                         if np.mean(episode_rewards)>select_est_reward:
                             select_policy=n_policy
                             select_reward=last_truth_reward
                             select_est_reward=np.mean(episode_rewards)
 
-                        # Actualizacion de constantes
+                        # Update of constants.
                         est_val_ep=max(est_val_ep,max(times_per_episode))
                         est_time_val_kappa=criterion_kappa*est_val_ep
                         total_val_time+=sum(times_per_episode)
@@ -495,14 +495,11 @@ class ModifiedFunctions_Common:
 class ModifiedFunctions_OnPolicy:
     '''
     Changes added to the following functions:
-    `OnPolicyAlgorithm.learn` (named as learn): This is the main learning function, and it has been modified to initialize the databases that will store the data for the simulations, allowing the possibility of also saving the policies that have been visited.
-    `OnPolicyAlgorithm.collect_rollouts` (named as collect_rollouts): This function is involved in the train interaction and is modified to save the training interaction data.
-    `PPO.train` (named as PPO_train): This function is involved in policy updates and is modified to save the policy data used for those updates.
+    `OnPolicyAlgorithm.learn` (named as learn): This is the main learning function, and it has been modified to initialize the database that will store the process data, allowing the possibility of also saving the policies that have been visited.
+    `OnPolicyAlgorithm.dump_logs` (named as dump_logs): The function is modified to apply best policy tracking using the ‘train’ criterion, and to store the missing data associated with the current iteration relating to best policy tracking.
 
     Changes made in each original function are highlighted with a comment such as: # MODIFICATION.
     '''
-
-    # Funcion modificada para inicializar base de datos en que se almacenaran los datos relevantes del proceso, con la posibilidad de guardar las politicas visitadas
     def learn(
         self: SelfOnPolicyAlgorithm,
         total_timesteps: int,
@@ -596,7 +593,54 @@ class ModifiedFunctions_OnPolicy:
 
         return self
 
-    # TODO: esta funcion me puede servir ahora para el criterio train propuesto por el revisor: off-policy evaluation train (OPE)
+    def dump_logs(self, iteration: int = 0) -> None:
+        """
+        Write log.
+
+        :param iteration: Current logging iteration
+        """
+        assert self.ep_info_buffer is not None
+        assert self.ep_success_buffer is not None
+
+        time_elapsed = max((time.time_ns() - self.start_time) / 1e9, sys.float_info.epsilon)
+        fps = int((self.num_timesteps - self._num_timesteps_at_start) / time_elapsed)
+        if iteration > 0:
+            self.logger.record("time/iterations", iteration, exclude="tensorboard")
+        if len(self.ep_info_buffer) > 0 and len(self.ep_info_buffer[0]) > 0:
+            self.logger.record("rollout/ep_rew_mean", safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer]))
+            self.logger.record("rollout/ep_len_mean", safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer]))
+        self.logger.record("time/fps", fps)
+        self.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
+        self.logger.record("time/total_timesteps", self.num_timesteps, exclude="tensorboard")
+        if len(self.ep_success_buffer) > 0:
+            self.logger.record("rollout/success_rate", safe_mean(self.ep_success_buffer))
+        self.logger.dump(step=self.num_timesteps)
+
+        # MODIFICATION ##############################################
+        global select_policy,select_reward,select_est_reward, criterion, criterion_conf, last_truth_reward, n_policy
+
+        if criterion=='train':
+
+            # Comprobar si la mejor politica segun la estimacion del criterio a cambiado
+            if safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer])>select_est_reward:
+                select_policy=n_policy
+                select_reward=last_truth_reward
+                select_est_reward=safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer])
+
+            # Completar las dos columnas de la ultima iteracion que faltaban por completar en el df
+            with open(join(process_dir, "df_process_"+criterion+'_'+criterion_conf+".csv"), "r", newline="") as df_process:
+                rows = list(csv.reader(df_process))
+                rows[-1][4] = select_policy
+                rows[-1][5] = select_reward 
+    
+            with open(join(process_dir, "df_process_"+criterion+'_'+criterion_conf+".csv"), "w", newline="") as df_process:
+                writer = csv.writer(df_process)
+                writer.writerows(rows)
+
+        #############################################################
+
+
+    # TODO: This function can be used for improved training criterion proposals, e.g., off-policy evaluation training (OPE).
     def collect_rollouts(
         self,
         env: VecEnv,
@@ -744,7 +788,7 @@ class ModifiedFunctions_OnPolicy:
 
         return True
 
-    # TODO: esta funcion me puede servir ahora para el criterio test propuesto por el revisor: event-triggered validation
+    # TODO: This function could be used for a new version of validation criteria, e.g. event-triggered validation.
     def PPO_train(self) -> None:
         """
         Update policy using the currently gathered rollout buffer.
@@ -885,52 +929,6 @@ class ModifiedFunctions_OnPolicy:
 
         ###########################################################################################
     
-    # Funcion modificada para aplicar el best policy tracking usando el criterio train
-    def dump_logs(self, iteration: int = 0) -> None:
-        """
-        Write log.
-
-        :param iteration: Current logging iteration
-        """
-        assert self.ep_info_buffer is not None
-        assert self.ep_success_buffer is not None
-
-        time_elapsed = max((time.time_ns() - self.start_time) / 1e9, sys.float_info.epsilon)
-        fps = int((self.num_timesteps - self._num_timesteps_at_start) / time_elapsed)
-        if iteration > 0:
-            self.logger.record("time/iterations", iteration, exclude="tensorboard")
-        if len(self.ep_info_buffer) > 0 and len(self.ep_info_buffer[0]) > 0:
-            self.logger.record("rollout/ep_rew_mean", safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer]))
-            self.logger.record("rollout/ep_len_mean", safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer]))
-        self.logger.record("time/fps", fps)
-        self.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
-        self.logger.record("time/total_timesteps", self.num_timesteps, exclude="tensorboard")
-        if len(self.ep_success_buffer) > 0:
-            self.logger.record("rollout/success_rate", safe_mean(self.ep_success_buffer))
-        self.logger.dump(step=self.num_timesteps)
-
-        # MODIFICATION ##############################################
-        global select_policy,select_reward,select_est_reward, criterion, criterion_conf, last_truth_reward, n_policy
-
-        if criterion=='train':
-
-            # Comprobar si la mejor politica segun la estimacion del criterio a cambiado
-            if safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer])>select_est_reward:
-                select_policy=n_policy
-                select_reward=last_truth_reward
-                select_est_reward=safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer])
-
-            # Completar las dos columnas de la ultima iteracion que faltaban por completar en el df
-            with open(join(process_dir, "df_process_"+criterion+'_'+criterion_conf+".csv"), "r", newline="") as df_process:
-                rows = list(csv.reader(df_process))
-                rows[-1][4] = select_policy
-                rows[-1][5] = select_reward 
-    
-            with open(join(process_dir, "df_process_"+criterion+'_'+criterion_conf+".csv"), "w", newline="") as df_process:
-                writer = csv.writer(df_process)
-                writer.writerows(rows)
-
-        #############################################################
 
 class ModifiedFunctions_OffPolicy:
 
@@ -1067,14 +1065,11 @@ class Options:
                       selec_criterion={ "name": 'last', "kappa": None,"phi": None, "phi_c": None}):
 
         '''
-        Training an on-policy reinforcement learning agent using Stable-baselines3.
+        Train an on-policy reinforcement learning agent using Stable-Baselines3.
 
         This function configures the environment, initializes the selected on-policy algorithm, 
-        performs training, and stores the relevant data for each iteration so that different selection criteria
-        can later be simulated on this same training process without having to rerun it for each different 
-        criterion considered. To do this, two databases are stored in the `library_dir` directory: 
-        `df_traj.csv` and `df_val.csv`, containing data per learning iteration associated with training 
-        (for the train criterion) and validation (for criteria based on validation and ground truth). 
+        performs training using the specified selection criterion, and stores the relevant data 
+        at each iteration for subsequent diagnostic analysis of the learning process.
         
         Parameters are grouped into the following categories:
 
@@ -1123,16 +1118,17 @@ class Options:
             `policy_kwargs`: additional arguments to be passed to the policy on creation.
 
 
-        For policy evaluation (related to selection criteria)
-        .....................................................
+        For policy selection
+        ....................
 
             `callback`: Set it to True to validate the policies that have been visited.
-            `n_eval_ep`: The number of episodes to validate the current policy.
+            `n_eval_ep`: Number of episodes considered for estimating the ground truth.
             `eval_freq`: The period, expressed in the number of training steps, at which the callback function is called. Set `eval_freq = n_steps_per_env*n_workers` in order to store the validation data associated with all visited policies.
             `n_eval_envs`: Number of parallel environments considered for completing the `n_eval_ep` validation episodes. For a balanced use of parallelization in training and validation, it is recommended to set `n_eval_env = n_workers`.
             `deterministic_eval`: Set to True to make validation interactions deterministic, and use the same initial states for validating the different policies visited (this enables a paired comparison of policy rewards).
-            `stats_window_size`: Window size for the rollout logging, specifying the number of episodes to average the reported success rate, mean episode length, and mean reward over (related to kappa parameter of train criteria). Currently does not affect data storage.
+            `selec_criterion`: a dictionary containing the `name` of the criterion ('last', 'train', 'validation' or 'cost_driven_validation'), and the values of its parameters that determine its configuration (for 'last', `kappa`, `phi` and `phi_c` are `None`; for 'train', the integer `kappa` must be specified; for 'validation', the integers `kappa` and `phi`; and for 'cost_driven_validation', the integer `kappa` and the float `phi_c` in the range (0, 1))
 
+           
         The default values correspond to the Stable-Baselines3 defaults. Environment- and algorithm-specific hyperparameters can later be
         overridden according to the predefined configurations used in RL Baselines3 Zoo.
         '''
@@ -1157,7 +1153,7 @@ class Options:
         criterion_phi=selec_criterion["phi"]
         criterion_phi_c=selec_criterion["phi_c"]
 
-        # Configuracion
+        # Configuration of the selection criterion.
         if criterion=='last':
             criterion_conf=''
         if criterion=='train':
@@ -1176,7 +1172,7 @@ class Options:
         OnPolicyAlgorithm.learn=ModifiedFunctions_OnPolicy.learn
         OnPolicyAlgorithm.dump_logs=ModifiedFunctions_OnPolicy.dump_logs
 
-        # TODO: estos dos descomentar cuando haya remodificado las funciones para aplicar los otros criterios train y validation propuestos por el revisor
+        # NOTE:  if the functions are modified to implement new criteria adaptations, such as training with OPE estimates or event-triggered validation, uncomment these lines.
         #OnPolicyAlgorithm.collect_rollouts=ModifiedFunctions_OnPolicy.collect_rollouts
         #PPO.train=ModifiedFunctions_OnPolicy.PPO_train
 
@@ -1214,8 +1210,7 @@ class Options:
         model.set_random_seed(seed)
         
 
-        # Esto lo hago para cualquier criterio, ya que es lo que nos permitira guardar los datos de truth
-        # TODO: aunque deberia quizas ser una opcion optativa
+        # This is done for any criterion, as it is what will enable the ground truth data to be saved.
         callback=EvalCallback(eval_env,n_eval_episodes=n_eval_ep,eval_freq=eval_freq,
                                   log_path=library_dir+'/'+experiment_name,best_model_save_path=library_dir+'/'+experiment_name,verbose=0)
 
@@ -1229,23 +1224,25 @@ class Options:
                       train_freq=1,n_workers=1,truth_n_workers=1, 
                       n_epoch=1,batch_size=256, 
                       device='auto', vec_env_type='sequential', 
-
-                      # antes estos no los tenia
                       normalize=False, 
                       policy='MlpPolicy',
-
-                      # TODO: es posible que aqui tenga que añadir mas parametros segun los entornos que incluya para SAC
                       tau=0.005,gamma=0.99,ent_coef='auto',learning_rate=0.0003,buffer_size=1000000,
                       learning_starts=100,use_sde=False,policy_kwargs=None,
-
-                      callback=None, n_eval_ep=5, eval_freq=10000, n_eval_envs=1, deterministic_eval=False,#stats_window_size=100, 
-
-                      # Antes este no lo tenia
+                      callback=None, n_eval_ep=5, eval_freq=10000, n_eval_envs=1, deterministic_eval=False,#
                       selec_criterion={ "name": 'last', "kappa": None,"phi": None, "phi_c": None}
 
                       ):
+
+        '''
+        Train an off-policy reinforcement learning agent using Stable-Baselines3.
         
-        # Variables globales
+        This function configures the environment, initializes the selected off-policy algorithm, 
+        performs training using the specified selection criterion, and stores the relevant data 
+        at each iteration for subsequent diagnostic analysis of the learning process.
+        
+        '''
+
+        # Global variables.
         global df_traj, process_dir,make_policy_saving,all_initial_states, eval_env_name, make_eval_deterministic, make_vec_env_type, n_envs_for_truth_eval, make_normalize
         df_traj=[]
         make_policy_saving= save_policies
@@ -1263,7 +1260,7 @@ class Options:
         criterion_phi=selec_criterion["phi"]
         criterion_phi_c=selec_criterion["phi_c"]
 
-        # Configuracion
+        # Configuration of the selection criterion.
         if criterion=='last':
             criterion_conf=''
         if criterion=='train':
@@ -1274,15 +1271,12 @@ class Options:
                     criterion_conf=str(selec_criterion["kappa"])+'_'+str(selec_criterion["phi_c"])
 
 
-        # Crear nuevos directorios.
+        # Create new directory.
         os.makedirs(process_dir, exist_ok=True)
 
-        # Modificar funciones de librerias existentes 
+        # Modify functions of existing libraries. 
         from stable_baselines3.sac import MlpPolicy, SAC
         OffPolicyAlgorithm.learn=ModifiedFunctions_OffPolicy.learn
-
-        # OffPolicyAlgorithm.collect_rollouts=ModifiedFunctions_OffPolicy.collect_rollouts
-        # SAC.train=ModifiedFunctions_OffPolicy.SAC_train
 
         if callback==True:
             EvalCallback._on_step= ModifiedFunctions_Common._on_step
@@ -1310,7 +1304,6 @@ class Options:
             model = SAC(policy,
                     env, seed=seed,
                     train_freq=train_freq,batch_size=batch_size,gradient_steps=n_epoch,
-                    # TODO: aqui habra que añadir las variables necesarias que modifiquen los parametros de aprendizaje en las conf zoo para SAC incluidas
                     tau=tau,gamma=gamma,ent_coef=ent_coef,learning_rate=learning_rate,buffer_size=buffer_size, learning_starts=learning_starts,
                     policy_kwargs=policy_kwargs,use_sde=use_sde,
                     stats_window_size=[selec_criterion['kappa'] if selec_criterion['kappa']!=None else 100][0],
@@ -1318,8 +1311,6 @@ class Options:
 
         model.set_random_seed(seed)
 
-        # Esto lo hago para cualquier criterio, ya que es lo que nos permitira guardar los datos de truth
-        # TODO: aunque deberia quizas ser una opcion optativa
         callback=EvalCallback(eval_env,n_eval_episodes=n_eval_ep,eval_freq=eval_freq,
                                   log_path=library_dir+'/'+experiment_name,best_model_save_path=library_dir+'/'+experiment_name,verbose=0)
 
@@ -1332,11 +1323,21 @@ class Options:
 
 class PackOptions:
     '''
-    Training an on-policy reinforcement learning agent using Stable-baselines3 with PPO, 
-    and specific configurations determined by the method-environment pack in the RL Baselines3 Zoo.
+    Training an on-policy (PPO) or off-policy (SAC) reinforcement learning agent using Stable-baselines3, 
+    and specific configurations determined by RL Baselines3 Zoo for the selected method-environment pack.
 
-    TODO: aqui creo que debo añadir como parametro modificable manualemente en cada una de las funciones
-    el valor de n_eval_ep
+    Each function in this class is associated with a different pack, determined by a pair consisting of 
+    an algorithm and an environment. To execute these functions, the following arguments must be provided:
+
+    * `seed`: the random seed that determines the randomness of the process.
+    * `library_dir`: the directory where the data associated with the learning process will be stored.
+    * `criterion`: a dictionary containing the `name` of the criterion ('last', 'train', 'validation' or 'cost_driven_validation'), 
+    and the values of its parameters that determine its configuration (for 'last', `kappa`, `phi` and `phi_c` are `None`; 
+    for 'train', the integer `kappa` must be specified; for 'validation', the integers `kappa` and `phi`; 
+    and for 'cost_driven_validation', the integer `kappa` and the float `phi_c` in the range (0, 1)).
+    * `available_resources`: an integer that determines the number of CPUs available to be allocated to the learning process.
+    * `n_eval_ep`: number of episodes to be considered for the additional validation aimed at estimating the ground truth.
+
     '''
     # On-policy packs (with PPO)
     #------------------------  Classic Control
@@ -1698,8 +1699,6 @@ class PackOptions:
                 truth_n_workers=available_resources, # learning interaction
                 device='auto', vec_env_type='sequential', # execution type
                 policy='MlpPolicy', learning_rate=1e-3,# learning process parameters
-                # NOTE: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
-                # porque sino la ejecucion de prueba va a tardar muchisimo para evaluar todas las politicas de la secuencia
                 callback=True, n_eval_ep=n_eval_ep, eval_freq=1, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
@@ -1737,8 +1736,6 @@ class PackOptions:
                 device='auto', vec_env_type='sequential', # execution type
                 policy='MlpPolicy', learning_rate=3e-4,buffer_size=50000,ent_coef=0.1,gamma=0.9999,tau=0.01,
                 learning_starts=0, use_sde=True, policy_kwargs=dict(log_std_init=-3.67, net_arch=[64, 64]),   # learning process parameters
-                # NOTE: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
-                # porque sino la ejecucion de prueba va a tardar muchisimo para evaluar todas las politicas de la secuencia
                 callback=True, n_eval_ep=n_eval_ep, eval_freq=32, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
@@ -1778,8 +1775,6 @@ class PackOptions:
                 policy='MlpPolicy',gamma=0.99,ent_coef='auto', learning_rate= lambda progress_remaining: 7.3e-4 * progress_remaining,
                 buffer_size=1000000,tau=0.01,learning_starts=10000, 
                 policy_kwargs=dict(net_arch=[400, 300]),# learning process parameters
-                # NOTE: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
-                # porque sino la ejecucion de prueba va a tardar muchisimo para evaluar todas las politicas de la secuencia
                 callback=True, n_eval_ep=n_eval_ep, eval_freq=1, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
@@ -1819,8 +1814,6 @@ class PackOptions:
                 policy='MlpPolicy',gamma=0.98,ent_coef='auto', learning_rate= 7.3e-4,
                 buffer_size=300000,tau=0.02,learning_starts=10000, use_sde=True, 
                 policy_kwargs=dict(log_std_init=-3, net_arch=[400, 300]),# learning process parameters
-                # NOTE: si no queremos modificar la configuracion por defecto, tendremos que bajar el valor de n_eval_ep
-                # porque sino la ejecucion de prueba va a tardar muchisimo para evaluar todas las politicas de la secuencia
                 callback=True, n_eval_ep=n_eval_ep, eval_freq=64, deterministic_eval=True, # selection criteria
                 selec_criterion=criterion
                 )
@@ -1829,10 +1822,10 @@ class PackOptions:
 class Metrics:
 
     '''
-    en esta clase, dada una df_process generada con un metodo-entorno-semilla-criterio, 
-    se generan los datos relacionados con las metricas propuestas.
-
-    quiza no es necesario guardarlas, igual es suficiente con que cada metodo devuelva dichos datos en el return
+    In this class, given a database that stores data from a learning process generated by a pack 
+    with a combination of method, environment, seed and criterion, the data related to the proposed 
+    post-hoc diagnostic metrics – performance degradation, selection accuracy and selection 
+    efficiency – are calculated.
     '''
 
     def __init__(self,df_process_path):
@@ -1848,13 +1841,13 @@ class Metrics:
         for i in range(len(truth_last)):
 
             if truth_last[i]-min(truth_last[:i+1])<=np.std(truth_last[:i+1]) :
-                if a==None or i-a<int(len(truth_last)*w): # La condicion tiene que cumplirse con una cierta continuidad (no vale que se vuelva a cumprir mucho despues otra vez)
+                if a==None or i-a<int(len(truth_last)*w): # The condition must be met with a certain degree of continuity (it is not sufficient for it to be met again much later).
                     a=i
             if max(truth_last[-i-1:])-truth_last[-1-i]<=np.std(truth_last[-i-1:]) :
                 if b==None or b-len(truth_last)+i<int(len(truth_last)*w):
                     b=len(truth_last)-i
 
-        # Para que siempre haya un minimo de datos en los intervalos [0,a], [a,b] y [b,T]
+        # To ensure that there is always a minimum amount of data in the intervals [0, a], [a, b] and [b, T].
         a=min([max([a,int(w*len(truth_last))]),int(2*len(truth_last)/3)-int(w*len(truth_last))])
         b=max([min([b,len(truth_last)-int(w*len(truth_last))]),a+int(w*len(truth_last))])
 
@@ -1880,7 +1873,7 @@ class Metrics:
         
     def accuracy(self):
 
-        # FIXME: cuando el criterio es validation, el truth_best deberia ser al asociado al tiempo t+t', sumando el tiempo extra de validacion
+        # FIXME: When the criterion is ‘validation’, ‘truth_best’ should be associated with the time t+t’, adding the extra validation time.
         truth_selec=self.df_process['reward_select'].tolist()
         truth_best=self.df_process['reward_best'].tolist()
         truth_last=self.df_process['reward_last'].tolist()
@@ -1910,10 +1903,11 @@ class Metrics:
 
 class ProcessAnalysis:
     '''
-    En esta clase se añadiran los metodos que permitan a partir de un df_process generar las graficas:
-    - learning curve criterion vs truth learning curve
-    - evolution of the truth reward of the last policy + region limits
-    - boxplots of degradation, accuracy and efficiency by region
+    This class contains the methods that enable the generation of the following graphs from a database
+    storing data associated with a learning process defined by a pack using a specific method, environment, seed and criterion:
+    * Learning curve criterion versus true learning curve
+    * Evolution of the true reward of the last policy, including region limits
+    * Boxplots of degradation, accuracy and efficiency by region
     '''
 
     def __init__(self,df_process_path,figure_path,w=0.1):
@@ -1943,7 +1937,6 @@ class ProcessAnalysis:
         plt.xlabel('learning iteration')
         plt.ylabel('policy return')
 
-        # Leyenda fuera de la gráfica, debajo
         plt.legend(
             loc="upper center",
             bbox_to_anchor=(0.5, -0.3),
@@ -1963,14 +1956,10 @@ class ProcessAnalysis:
         plt.figure(figsize=(4, 2.5))
         plt.subplots_adjust(left=0.19, right=0.98,bottom=0.3,  top=0.92 )
 
-        # Curva azul
         plt.plot(truth_last, color="blue",linewidth=1)
-
-        # Líneas verticales continuas
         plt.axvline(x=a, color="red", linewidth=1, label=r"$a$")
         plt.axvline(x=b, color="black", linewidth=1, label=r"$b$")
 
-        # Leyenda debajo de la gráfica
         plt.legend(
             loc="upper center",
             bbox_to_anchor=(0.5, -0.3),
@@ -1995,7 +1984,7 @@ class ProcessAnalysis:
 
         data = [deg1, acc1, eff1,deg2, acc2, eff2,deg3, acc3, eff3]
 
-        # Posiciones de los boxplots
+        # Positions of the boxplots.
         positions = [1, 2, 3, 5, 6, 7, 9, 10, 11]
 
         fig, ax = plt.subplots(figsize=(5, 2))
@@ -2009,22 +1998,15 @@ class ProcessAnalysis:
             patch_artist=True,
             showfliers=False,
 
-            # Caja (IQR)
             boxprops=dict(facecolor="black",edgecolor="white",alpha=0.8,linewidth=1.5),
-
-            # Mediana
             medianprops=dict(color="red",linewidth=2.5),
-
-            # Bigotes
             whiskerprops=dict(color="black",linewidth=1.2),
-
-            # Topes
             capprops=dict( color="black",linewidth=1.2)
         )
 
         ax.set_xlim(0,12)
 
-        # Etiquetas de cada boxplot
+        # Labels of each boxplot.
         ax.set_xticks(positions)
         ax.set_xticklabels([
             r"$\delta$", r"$\alpha$", r"$\varepsilon$",
@@ -2032,14 +2014,14 @@ class ProcessAnalysis:
             r"$\delta$", r"$\alpha$", r"$\varepsilon$"
         ])
 
-        # Nombres de las regiones
+        # Region names.
         region_centers = [2, 6, 10]
         region_names = ["Initialization", "Learning", "Convergence"]
 
         for x, name in zip(region_centers, region_names):
             ax.text(x,1.02,name,ha="center",va="bottom",transform=ax.get_xaxis_transform(),fontsize=11)
 
-        # Separadores entre regiones
+        # Separators between regions.
         ax.axvline(4, color="black", linewidth=1)
         ax.axvline(8, color="black", linewidth=1)
 
@@ -2054,7 +2036,7 @@ def complete_analysis(df_process_path,figure_path,w=0.1):
     analyzer.criterion_diagnosis()
 
 
-# Prueba con algunos procesos aislados variados
+# Trying a few different isolated processes.
 
 # PackOptions.PPO_Pendulum(1,'library/results',{ "name": 'last',"kappa": None,"phi": None,"phi_c": None },available_resources=6)
 # PackOptions.PPO_Pendulum(1,'library/results',{ "name": 'train',"kappa": 50,"phi": None,"phi_c": None },available_resources=6)
@@ -2067,7 +2049,7 @@ def complete_analysis(df_process_path,figure_path,w=0.1):
 # PackOptions.SAC_MountainCarContinuous(2,'library/results',{ "name": 'cost_driven_validation',"kappa": 5,"phi": None,"phi_c": 0.2 },available_resources=6)
 
 
-# Obtener graficas de df_process
+# Getting graphs from the generated databases.
 
 # complete_analysis('library/results/SB3_PPO_Pendulum/seed1/df_process_last_.csv','library/results/SB3_PPO_Pendulum/seed1')
 # complete_analysis('library/results/SB3_PPO_Pendulum/seed1/df_process_train_50.csv','library/results/SB3_PPO_Pendulum/seed1')

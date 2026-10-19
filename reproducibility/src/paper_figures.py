@@ -18,7 +18,7 @@ figures_path='reproducibility/results/figures'
 os.makedirs(figures_path+'/paper/', exist_ok=True)
 
 #==================================================================================================
-# Regiones
+# Regions
 #==================================================================================================
 
 def learning_region_limits(truth_last):
@@ -27,30 +27,30 @@ def learning_region_limits(truth_last):
     for i in range(len(truth_last)):
 
         if truth_last[i]-min(truth_last[:i+1])<=np.std(truth_last[:i+1]) :
-            if a==None or i-a<int(len(truth_last)*0.1): # La condicion tiene que cumplirse con una cierta continuidad (no vale que se vuelva a cumprir mucho despues otra vez)
+            if a==None or i-a<int(len(truth_last)*0.1): # The condition must be met with a certain degree of continuity (it is not valid to meet it again much later).
                 a=i
         if max(truth_last[-i-1:])-truth_last[-1-i]<=np.std(truth_last[-i-1:]) :
             if b==None or b-len(truth_last)+i<int(len(truth_last)*0.1):
                 b=len(truth_last)-i
 
 
-    # Para saber los limites que cumples
+    # To known which conditions are met by the limits of the general definition.
     a_std,b_std=a,b
     if a<int(0.1*len(truth_last)):
-        print('a para garantizar minimo size de [0,a]')
+        print('a to ensure a minimum size of [0, a]')
     if b>len(truth_last)-int(0.1*len(truth_last)):
-        print('b para garantizar minimo size de [b,T]')
+        print('b to ensure the minimum size of [b, T]')
 
     if max([a,int(0.1*len(truth_last))])>int(2*len(truth_last)/3)-int(0.1*len(truth_last)):
-        print('a para no pasarnos de t_max')
+        print('a not to exceed t_max')
     if min([b,len(truth_last)-int(0.1*len(truth_last))])<a+int(0.1*len(truth_last)):
-        print('b para garantizar a>b')
+        print('b to ensure that a > b')
 
-    # Para que siempre haya un minimo de datos en los intervalos [0,a], [a,b] y [b,T]
+    # To ensure that there is always a minimum amount of data in the intervals [0, a], [a, b] and [b, T].
     a=min([max([a,int(0.1*len(truth_last))]),int(2*len(truth_last)/3)-int(0.1*len(truth_last))])
     b=max([min([b,len(truth_last)-int(0.1*len(truth_last))]),a+int(0.1*len(truth_last))])
 
-    # Para saber los limites que cumples
+    # To known which conditions are met by the limits of the general definition.
     if a==a_std:
         print('a con std')
     if b==b_std:
@@ -105,10 +105,10 @@ plt.savefig(figures_path+'/paper/regions.pdf')
 
 
 #==================================================================================================
-# Degradacion, precision y eficacia 
+# Degradation, accuracy and efficiency
 #==================================================================================================
 
-# Degradacion
+# Degradation.
 fig, axs = plt.subplots(1,1, figsize=(4.5, 3))
 plt.subplots_adjust(top=0.92,bottom=0.25,left=0.15,right=0.98, hspace=0.0,wspace=0.2)
 
@@ -149,7 +149,7 @@ def plot_degradation(ax,truth_last):
 
     ax.plot(range(len(truth_last)),truth_last,color='blue',linewidth=1)
 
-    #t=39, no hay degradacion
+    #t=39, there is no degradation.
     ax.axhline(y=np.mean(truth_last[:39+1]), color='red',linewidth=1, linestyle='-',alpha=0.5)
     ax.scatter(39, truth_last[39], color='black')
     ax.text(0.02, 0.15,r'$\textbf{mean}_{0,39}$',transform=ax.get_yaxis_transform(),color='red',va='bottom',fontsize=12)
@@ -158,10 +158,10 @@ def plot_degradation(ax,truth_last):
     ax.vlines(x=39, ymin=np.mean(truth_last[:39+1]), ymax=max(truth_last[:39+1]), color='grey',linestyle='-',linewidth=5,alpha=0.3)
 
 
-    #t=66, hay degradacion
+    #t=66, there is deterioration.
     draw_deg(66)
     
-    #t=89, hay degradacion
+    #t=89, there is deterioration.
     draw_deg(89)
 
     text = (
@@ -181,8 +181,6 @@ def plot_degradation(ax,truth_last):
     ax.set_yticks(np.arange(0, 1.01, 0.25))
     ax.tick_params(axis='both', labelsize=12)
 
-
-    # Leyenda
     legend_handles = [
     mlines.Line2D([], [], color='grey', linestyle='-', linewidth=6, alpha=0.3,label=r'denominator of $\delta_t$'),
     mlines.Line2D([], [], color='black', linestyle='-', linewidth=6, alpha=0.5,label=r'numerator of $\delta_t$'),
@@ -193,7 +191,7 @@ def plot_degradation(ax,truth_last):
 plot_degradation(axs,truth_last)
 plt.savefig(figures_path+'/paper/deg.pdf')
 
-# Precision
+# Accuracy.
 fig, axs = plt.subplots(1,1, figsize=(4.5, 3.2))
 plt.subplots_adjust(top=0.92,bottom=0.31,left=0.15,right=0.98, hspace=0.0,wspace=0.2)
 
@@ -208,7 +206,7 @@ def plot_precision(ax,truth_last):
     ax.axhline(y=min(truth_last[:65+1]), color='red', linestyle='-',alpha=0.5)
     ax.text(0.65, 0.01,r'$\textbf{min}_{0,65}$',transform=ax.get_yaxis_transform(),color='red',va='bottom',fontsize=12)
 
-    #t=35, politica seleccionada por criterio
+    #t=35, policy selected by criterion.
     ax.scatter(35, truth_last[35], color='orange')
     ax.text(35-8, truth_last[35]+0.1,r'$\widetilde{\pi}_{65}$', va='center',color='orange',fontsize=12)
     ax.hlines(y=truth_last[35], xmin=35, xmax=truth_last[:65+1].index(max(truth_last[:65+1])), color='orange',linestyle='--',linewidth=1)
@@ -245,7 +243,6 @@ def plot_precision(ax,truth_last):
     ax.set_ylim([-0.1, 1.3])
     ax.set_yticks(np.arange(0, 1.01, 0.25))
 
-    # Leyenda
     legend_handles = [
     mlines.Line2D([], [], color='grey', linestyle='-', linewidth=6, alpha=0.3,label=r'denominator of $\alpha_t$'),
     mlines.Line2D([], [], color='orange', linestyle='-', linewidth=6, alpha=0.5,label=r'numerator of $\alpha_t$ for selection 1'),
@@ -262,7 +259,7 @@ def plot_precision(ax,truth_last):
 plot_precision(axs,truth_last)
 plt.savefig(figures_path+'/paper/acc.pdf')
 
-# Eficiencia
+# Efficiency.
 fig, axs = plt.subplots(1,1, figsize=(4.5, 3))
 plt.subplots_adjust(top=0.92,bottom=0.3,left=0.15,right=0.98, hspace=0.0,wspace=0.2)
 
@@ -277,7 +274,7 @@ def plot_efficiency(ax,truth_last):
 
     ax.axvline(x=100, color='red', linestyle='-',alpha=0.5)
 
-    #t=42, eficiencia baja por criterio
+    #t=42, low efficiency due to selection.
     t_min,eff=efficiency(truth_last[42],truth_last)
     ax.hlines(y=truth_last[42], xmin=0, xmax=100, color="grey",linestyle='-',linewidth=5,alpha=0.3,zorder=1)
     ax.hlines(y=truth_last[42], xmin=0, xmax=t_min, color='orange',linestyle='-',linewidth=5,alpha=0.5,zorder=2)
@@ -287,7 +284,7 @@ def plot_efficiency(ax,truth_last):
     ax.text(0.05, truth_last[42]+0.05,rf'$\varepsilon_{{100}}={{{round(eff,2)}}}$',transform=ax.get_yaxis_transform(),color='orange',va='bottom',fontsize=12)
 
 
-    #t=92, eficiencia baja por convergencia
+    #t=92, low efficiency due to convergence.
     t_min,eff=efficiency(truth_last[92],truth_last)
     ax.hlines(y=truth_last[92], xmin=0, xmax=100, color="grey",linestyle='-',linewidth=5,alpha=0.3,zorder=1)
     ax.hlines(y=truth_last[92], xmin=0, xmax=t_min, color='green',linestyle='-',linewidth=5,alpha=0.5,zorder=2)
@@ -301,7 +298,6 @@ def plot_efficiency(ax,truth_last):
     ax.set_xlabel(r'$t$',fontsize=12)
     ax.tick_params(axis='both', labelsize=12)
 
-    # Leyenda
     legend_handles = [
     mlines.Line2D([], [], color='grey', linestyle='-', linewidth=6, alpha=0.3,label=r'denominator of $\varepsilon_t$ '),
         mlines.Line2D([], [], color='orange', linestyle='-', linewidth=6, alpha=0.5,label=r'numerator of $\varepsilon_t$ for selection 1'),
